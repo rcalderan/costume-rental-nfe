@@ -1,0 +1,645 @@
+{
+	"info": {
+		"_postman_id": "costume-rental-nfe-2026",
+		"name": "Costume Rental NFe - API Collection",
+		"description": "Coleção Postman do microsserviço costume-rental-nfe: emissão, assinatura e consulta (status do serviço, situação por chave e recibo) de NF-e (modelo 55) via SEFAZ em homologação, com massas de teste para cenários de sucesso, múltiplos itens e erro de validação.\n\n**Autenticação:** JWT Bearer token do Rentafit, herdado a nível de collection. Em ambiente local sem Nginx, a API aceita requests sem auth. Em HK/prod, o gateway Nginx valida o token via auth_request antes de rotear para o NFe.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "costume-rental-nfe"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "NF-e",
+			"item": [
+				{
+					"name": "Emitir NF-e - Sucesso (1 item)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_key\", jsonData.accessKey);",
+									"    pm.collectionVariables.set(\"protocol\", jsonData.protocol);",
+									"    pm.collectionVariables.set(\"receipt_number\", jsonData.receiptNumber);",
+									"    console.log(\"Access Key salva: \" + jsonData.accessKey);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"natureOperation\": \"Locacao de fantasia\",\n    \"items\": [\n        {\n            \"productCode\": \"FANT-001\",\n            \"description\": \"Fantasia Homem de Ferro - tamanho M\",\n            \"ncm\": \"61091000\",\n            \"cfop\": \"5102\",\n            \"unit\": \"UN\",\n            \"quantity\": 1,\n            \"unitValue\": 150.00\n        }\n    ],\n    \"customer\": {\n        \"name\": \"Maria da Silva\",\n        \"document\": \"52998224725\",\n        \"ie\": \"\",\n        \"street\": \"Rua das Flores\",\n        \"number\": \"123\",\n        \"complement\": \"Apto 45\",\n        \"neighborhood\": \"Centro\",\n        \"cityCode\": \"3548906\",\n        \"cityName\": \"Sao Carlos\",\n        \"state\": \"SP\",\n        \"zipCode\": \"13560000\",\n        \"phone\": \"16999998888\"\n    },\n    \"originId\": \"CONTRACT-1001\",\n    \"origin\": \"rental-contract\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/emit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"emit"
+							]
+						},
+						"description": "Emite uma NF-e em homologação com um único item de locação (fantasia)."
+					},
+					"response": []
+				},
+				{
+					"name": "Emitir NF-e - Sucesso (Multiplos Itens)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"access_key\", jsonData.accessKey);",
+									"    pm.collectionVariables.set(\"protocol\", jsonData.protocol);",
+									"    pm.collectionVariables.set(\"receipt_number\", jsonData.receiptNumber);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"natureOperation\": \"Locacao de fantasias\",\n    \"items\": [\n        {\n            \"productCode\": \"FANT-001\",\n            \"description\": \"Fantasia Homem de Ferro - tamanho M\",\n            \"ncm\": \"61091000\",\n            \"cfop\": \"5102\",\n            \"unit\": \"UN\",\n            \"quantity\": 1,\n            \"unitValue\": 150.00\n        },\n        {\n            \"productCode\": \"FANT-002\",\n            \"description\": \"Fantasia Princesa - tamanho P\",\n            \"ncm\": \"61091000\",\n            \"cfop\": \"5102\",\n            \"unit\": \"UN\",\n            \"quantity\": 2,\n            \"unitValue\": 120.50\n        },\n        {\n            \"productCode\": \"ACC-010\",\n            \"description\": \"Acessorio - coroa de princesa\",\n            \"ncm\": \"65069900\",\n            \"cfop\": \"5102\",\n            \"unit\": \"UN\",\n            \"quantity\": 1,\n            \"unitValue\": 25.00\n        }\n    ],\n    \"customer\": {\n        \"name\": \"Joao Pereira\",\n        \"document\": \"11444777000161\",\n        \"ie\": \"123456789\",\n        \"street\": \"Avenida Brasil\",\n        \"number\": \"500\",\n        \"complement\": \"\",\n        \"neighborhood\": \"Jardim America\",\n        \"cityCode\": \"3548906\",\n        \"cityName\": \"Sao Carlos\",\n        \"state\": \"SP\",\n        \"zipCode\": \"13561000\",\n        \"phone\": \"16988887777\"\n    },\n    \"originId\": \"CONTRACT-1002\",\n    \"origin\": \"rental-contract\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/emit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"emit"
+							]
+						},
+						"description": "Emite uma NF-e em homologação com múltiplos itens (fantasias + acessório) e destinatário pessoa jurídica com IE."
+					},
+					"response": []
+				},
+				{
+					"name": "Emitir NF-e - Erro Validacao (sem itens)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"natureOperation\": \"Locacao de fantasia\",\n    \"items\": [],\n    \"customer\": {\n        \"name\": \"Maria da Silva\",\n        \"document\": \"52998224725\",\n        \"street\": \"Rua das Flores\",\n        \"number\": \"123\",\n        \"neighborhood\": \"Centro\",\n        \"cityCode\": \"3548906\",\n        \"cityName\": \"Sao Carlos\",\n        \"state\": \"SP\",\n        \"zipCode\": \"13560000\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/emit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"emit"
+							]
+						},
+						"description": "Cenário negativo: lista de itens vazia deve retornar 400 (Bean Validation @NotEmpty)."
+					},
+					"response": []
+				},
+				{
+					"name": "Emitir NF-e - Erro Validacao (destinatario sem documento)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"natureOperation\": \"Locacao de fantasia\",\n    \"items\": [\n        {\n            \"productCode\": \"FANT-001\",\n            \"description\": \"Fantasia Homem de Ferro - tamanho M\",\n            \"ncm\": \"61091000\",\n            \"cfop\": \"5102\",\n            \"unit\": \"UN\",\n            \"quantity\": 1,\n            \"unitValue\": 150.00\n        }\n    ],\n    \"customer\": {\n        \"name\": \"Maria da Silva\",\n        \"document\": \"\",\n        \"street\": \"Rua das Flores\",\n        \"number\": \"123\",\n        \"neighborhood\": \"Centro\",\n        \"cityCode\": \"3548906\",\n        \"cityName\": \"Sao Carlos\",\n        \"state\": \"SP\",\n        \"zipCode\": \"13560000\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/emit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"emit"
+							]
+						},
+						"description": "Cenário negativo: documento (CPF/CNPJ) do destinatário em branco deve retornar 400 (Bean Validation @NotBlank em CustomerInfo.document)."
+					},
+					"response": []
+				},
+				{
+					"name": "Assinar XML (sign-only) - Sucesso",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set(\"signed_xml\", jsonData.signedXml);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"natureOperation\": \"Locacao de fantasia\",\n    \"items\": [\n        {\n            \"productCode\": \"FANT-001\",\n            \"description\": \"Fantasia Homem de Ferro - tamanho M\",\n            \"ncm\": \"61091000\",\n            \"cfop\": \"5102\",\n            \"unit\": \"UN\",\n            \"quantity\": 1,\n            \"unitValue\": 150.00\n        }\n    ],\n    \"customer\": {\n        \"name\": \"Maria da Silva\",\n        \"document\": \"52998224725\",\n        \"ie\": \"\",\n        \"street\": \"Rua das Flores\",\n        \"number\": \"123\",\n        \"complement\": \"Apto 45\",\n        \"neighborhood\": \"Centro\",\n        \"cityCode\": \"3548906\",\n        \"cityName\": \"Sao Carlos\",\n        \"state\": \"SP\",\n        \"zipCode\": \"13560000\",\n        \"phone\": \"16999998888\"\n    },\n    \"originId\": \"CONTRACT-1001\",\n    \"origin\": \"rental-contract\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/sign-only",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"sign-only"
+							]
+						},
+						"description": "Constrói e assina o XML da NF-e sem enviar à SEFAZ. Útil para validar o XML gerado sem depender de disponibilidade do webservice."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "NF-e Consultas",
+			"item": [
+				{
+					"name": "Status do Servico SEFAZ",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/status-servico",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"status-servico"
+							]
+						},
+						"description": "Consulta o status do servico de recepcao de NF-e na SEFAZ de homologacao (200 OK)."
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar NF-e por Chave - Sucesso",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/{{access_key}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"{{access_key}}"
+							]
+						},
+						"description": "Consulta a situacao da NF-e na SEFAZ pela chave de acesso salva por uma emissao anterior (`access_key`). Espera 200 OK com o status atual (ex.: AUTHORIZED)."
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar NF-e por Chave - Nao Encontrada",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/35260800000000000000550010000000019999999999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"35260800000000000000550010000000019999999999"
+							]
+						},
+						"description": "Cenario negativo: chave de acesso valida no formato mas inexistente na base da SEFAZ deve retornar 404 (cStat 217)."
+					},
+					"response": []
+				},
+				{
+					"name": "Consultar Recibo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/recibo/{{receipt_number}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"recibo",
+								"{{receipt_number}}"
+							]
+						},
+						"description": "Consulta o protocolo de autorizacao a partir do numero do recibo (`receipt_number`) retornado por um envio assincrono. Retorna 202 se o lote ainda estiver em processamento (cStat 105) ou 200 com o protocolo quando concluido."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "NF-e Eventos",
+			"item": [
+				{
+					"name": "Cancelar NF-e",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"protocol\": \"{{protocol}}\",\n    \"justification\": \"{{cancel_justification}}\",\n    \"sequence\": \"{{event_sequence}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/{{access_key}}/cancelar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"{{access_key}}",
+								"cancelar"
+							]
+						},
+						"description": "Envia evento de cancelamento para uma NF-e previamente autorizada. Requer `protocol` e `access_key` de emissao anterior."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancelar NF-e - Erro Validacao (justificativa curta)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"protocol\": \"{{protocol}}\",\n    \"justification\": \"curta\",\n    \"sequence\": \"{{event_sequence}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/{{access_key}}/cancelar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"{{access_key}}",
+								"cancelar"
+							]
+						},
+						"description": "Cenario negativo: justificativa com menos de 15 caracteres deve retornar 400."
+					},
+					"response": []
+				},
+				{
+					"name": "Carta de Correcao",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"correction\": \"{{correction_text}}\",\n    \"sequence\": \"{{event_sequence}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/{{access_key}}/carta-correcao",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"{{access_key}}",
+								"carta-correcao"
+							]
+						},
+						"description": "Envia evento de carta de correcao para uma NF-e autorizada."
+					},
+					"response": []
+				},
+				{
+					"name": "Carta de Correcao - Erro Validacao (correcao curta)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"correction\": \"curta\",\n    \"sequence\": \"{{event_sequence}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/{{access_key}}/carta-correcao",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"{{access_key}}",
+								"carta-correcao"
+							]
+						},
+						"description": "Cenario negativo: texto de correcao com menos de 15 caracteres deve retornar 400."
+					},
+					"response": []
+				},
+				{
+					"name": "Inutilizar Numeracao",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"year\": \"{{inutilization_year}}\",\n    \"cnpj\": \"{{query_document}}\",\n    \"model\": \"55\",\n    \"series\": \"1\",\n    \"initialNumber\": \"{{inutilization_initial}}\",\n    \"finalNumber\": \"{{inutilization_final}}\",\n    \"justification\": \"Inutilizacao de numeracao por erro de digitacao na nota fiscal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/inutilizar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"inutilizar"
+							]
+						},
+						"description": "Solicita inutilizacao de uma faixa de numeracao de NF-e."
+					},
+					"response": []
+				},
+				{
+					"name": "Manifestacao do Destinatario",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"eventCode\": \"{{manifestation_type}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/{{access_key}}/manifestacao",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"{{access_key}}",
+								"manifestacao"
+							]
+						},
+						"description": "Envia manifestacao do destinatario para uma NF-e. Tipos: 210200 confirmacao, 210210 ciencia, 210220 desconhecimento, 210240 operacao nao realizada."
+					},
+					"response": []
+				},
+				{
+					"name": "Consulta Cadastro",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"uf\": \"SP\",\n    \"document\": \"{{query_document}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/consulta-cadastro",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"consulta-cadastro"
+							]
+						},
+						"description": "Consulta cadastro de contribuinte na SEFAZ."
+					},
+					"response": []
+				},
+				{
+					"name": "Distribuicao DFe",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"queryType\": \"{{query_type}}\",\n    \"document\": \"{{query_document}}\",\n    \"nsuOrKey\": \"{{nsu_or_key}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/nfe/distribuicao-dfe",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"nfe",
+								"distribuicao-dfe"
+							]
+						},
+						"description": "Consulta distribuicao de documentos fiscais eletronicos (DFe)."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "access_key",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "protocol",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "signed_xml",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "receipt_number",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "event_sequence",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "cancel_justification",
+			"value": "Cancelamento por erro na emissao do documento fiscal",
+			"type": "string"
+		},
+		{
+			"key": "correction_text",
+			"value": "Correcao da descricao do item na nota fiscal",
+			"type": "string"
+		},
+		{
+			"key": "inutilization_year",
+			"value": "26",
+			"type": "string"
+		},
+		{
+			"key": "inutilization_initial",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "inutilization_final",
+			"value": "5",
+			"type": "string"
+		},
+		{
+			"key": "manifestation_type",
+			"value": "210210",
+			"type": "string"
+		},
+		{
+			"key": "query_document",
+			"value": "52998224725",
+			"type": "string"
+		},
+		{
+			"key": "nsu_or_key",
+			"value": "000000000000000",
+			"type": "string"
+		},
+		{
+			"key": "query_type",
+			"value": "NSU",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

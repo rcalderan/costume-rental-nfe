@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}/${DB_NAME:costume_rental_nfe}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  h2:
+    console:
+      enabled: false
+
+nfe:
+  ambiente: 1
+
+logging:
+  level:
+    root: INFO
+    br.com.costumerental.nfe: INFO

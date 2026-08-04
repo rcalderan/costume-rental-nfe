@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:costume-rental-nfe-test;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+nfe:
+  emit:
+    cnpj: "00000000000191"
+    ie: "111111111111"
+    uf: "SP"
+    razao-social: "Emitente Homologacao"
+    crt: "1"
+    endereco:
+      logradouro: "Rua Teste"
+      numero: "0"
+      bairro: "Centro"
+      municipio-codigo: "3548906"
+      municipio-nome: "Sao Carlos"
+      uf: "SP"
+      cep: "13560000"
+      pais-codigo: "1058"
+      pais-nome: "BRASIL"
+  certificate:
+    path: "src/test/resources/test-cert.pfx"
+    password: "test123"
+    tipo: "A1"
+  ambiente: "2"
+  serie: "1"
+  modelo: "55"
+  processo-versao: "1.0"
+  validacao-documento: false

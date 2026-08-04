@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: costume-rental-nfe
+  datasource:
+    url: jdbc:h2:mem:costume-rental-nfe;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true
+
+nfe:
+  emit:
+    cnpj: ${NFE_EMIT_CNPJ}
+    ie: ${NFE_EMIT_IE:}
+    uf: ${NFE_EMIT_UF:SP}
+    razao-social: ${NFE_EMIT_RAZAO_SOCIAL:Emitente Homologacao}
+    nome-fantasia: ${NFE_EMIT_NOME_FANTASIA:}
+    fone: ${NFE_EMIT_FONE:}
+    crt: ${NFE_EMIT_CRT:1}
+    endereco:
+      logradouro: ${NFE_EMIT_LOGRADOURO:Rua Teste}
+      numero: ${NFE_EMIT_NUMERO:0}
+      bairro: ${NFE_EMIT_BAIRRO:Centro}
+      municipio-codigo: ${NFE_EMIT_MUNICIPIO_CODIGO:3548906}
+      municipio-nome: ${NFE_EMIT_MUNICIPIO_NOME:Sao Carlos}
+      uf: ${NFE_EMIT_ENDERECO_UF:SP}
+      cep: ${NFE_EMIT_CEP:13560000}
+      pais-codigo: ${NFE_EMIT_PAIS_CODIGO:1058}
+      pais-nome: ${NFE_EMIT_PAIS_NOME:BRASIL}
+  certificate:
+    path: ${NFSE_CERT_PATH}
+    password: ${NFSE_CERT_PASSWORD}
+    tipo: ${NFSE_CERT_TIPO:A1}
+  ambiente: ${NFE_AMBIENTE:2}
+  serie: ${NFE_SERIE:1}
+  modelo: ${NFE_MODELO:55}
+  processo-versao: ${NFE_PROC_VERSAO:1.0}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+  health:
+    defaults:
+      enabled: true

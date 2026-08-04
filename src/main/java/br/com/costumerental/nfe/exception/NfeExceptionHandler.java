@@ -1,0 +1,48 @@
+package br.com.costumerental.nfe.exception;
+
+import br.com.swconsultoria.certificado.exception.CertificadoException;
+import br.com.swconsultoria.nfe.exception.NfeException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+public class NfeExceptionHandler {
+
+    @ExceptionHandler(NfeBusinessException.class)
+    public ResponseEntity<Map<String, String>> handleBusinessException(NfeBusinessException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
+    @ExceptionHandler({NfeException.class, CertificadoException.class})
+    public ResponseEntity<Map<String, String>> handleNfeException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationException(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(e -> {
+            String field = e instanceof FieldError ? ((FieldError) e).getField() : e.getObjectName();
+            errors.put(field, e.getDefaultMessage());
+        });
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Erro interno: " + ex.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+}

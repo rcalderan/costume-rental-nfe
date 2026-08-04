@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Profile local: log texto legivel no console -->
+    <springProfile name="local,default">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{operacao}|%X{chaveAcesso}] - %msg%n</pattern>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="br.com.costumerental.nfe" level="DEBUG"/>
+        <logger name="br.com.swconsultoria" level="DEBUG"/>
+    </springProfile>
+
+    <!-- Profiles hk/prod: JSON estruturado para stdout (observabilidade em Docker/CloudWatch) -->
+    <springProfile name="hk,prod">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>operacao</includeMdcKeyName>
+                <includeMdcKeyName>chaveAcesso</includeMdcKeyName>
+                <includeMdcKeyName>cStat</includeMdcKeyName>
+                <includeMdcKeyName>xMotivo</includeMdcKeyName>
+                <includeMdcKeyName>traceId</includeMdcKeyName>
+                <fieldNames>
+                    <timestamp>timestamp</timestamp>
+                    <version>[ignore]</version>
+                </fieldNames>
+            </encoder>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+        <logger name="br.com.costumerental.nfe" level="INFO"/>
+    </springProfile>
+</configuration>
