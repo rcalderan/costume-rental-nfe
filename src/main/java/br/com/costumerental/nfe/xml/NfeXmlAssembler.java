@@ -122,7 +122,9 @@ public class NfeXmlAssembler {
             sb.append("<fone>").append(digitsOnly(emit.getFone())).append("</fone>");
         }
         sb.append("</enderEmit>");
-        sb.append("<IE>").append(escape(emit.getIe())).append("</IE>");
+        if (emit.getIe() != null && !emit.getIe().isBlank()) {
+            sb.append("<IE>").append(escape(emit.getIe())).append("</IE>");
+        }
         sb.append("<CRT>").append(escape(emit.getCrt())).append("</CRT>");
         sb.append("</emit>");
         return sb.toString();

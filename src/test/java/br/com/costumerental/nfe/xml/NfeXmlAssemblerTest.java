@@ -19,10 +19,14 @@ class NfeXmlAssemblerTest {
 
     @BeforeEach
     void setUp() {
+        assembler = createAssembler("111111111111");
+    }
+
+    private NfeXmlAssembler createAssembler(String ie) {
         NfeProperties properties = new NfeProperties();
         NfeProperties.EmitProperties emit = new NfeProperties.EmitProperties();
         emit.setCnpj("00000000000191");
-        emit.setIe("111111111111");
+        emit.setIe(ie);
         emit.setUf("SP");
         emit.setRazaoSocial("Emitente Homologacao");
         emit.setCrt("1");
@@ -45,7 +49,7 @@ class NfeXmlAssemblerTest {
         properties.setProcessoVersao("1.0");
 
         AccessKeyGenerator accessKeyGenerator = new AccessKeyGenerator(properties);
-        assembler = new NfeXmlAssembler(properties, accessKeyGenerator);
+        return new NfeXmlAssembler(properties, accessKeyGenerator);
     }
 
     @Test
@@ -67,6 +71,16 @@ class NfeXmlAssemblerTest {
         String xml = assembler.buildXmlString(request);
 
         assertThat(xml).contains("NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL");
+    }
+
+    @Test
+    void shouldOmitIeWhenBlank() {
+        NfeXmlAssembler blankIeAssembler = createAssembler("");
+        NfeEmissionRequest request = sampleRequest();
+        String xml = blankIeAssembler.buildXmlString(request);
+
+        assertThat(xml).doesNotContain("<IE>");
+        assertThat(blankIeAssembler.build(request)).isNotNull();
     }
 
     private NfeEmissionRequest sampleRequest() {

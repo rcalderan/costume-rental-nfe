@@ -46,7 +46,6 @@ public class NfeProperties {
         @Pattern(regexp = "\\d{14}", message = "CNPJ deve conter 14 digitos")
         private String cnpj;
 
-        @NotBlank
         private String ie;
 
         @NotBlank

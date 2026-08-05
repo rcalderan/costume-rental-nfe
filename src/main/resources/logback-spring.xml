@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- Profile local: log texto legivel no console -->
-    <springProfile name="local,default">
+    <!-- Profile local/docker: log texto legivel no console -->
+    <springProfile name="local,default,docker">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
                 <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{operacao}|%X{chaveAcesso}] - %msg%n</pattern>
