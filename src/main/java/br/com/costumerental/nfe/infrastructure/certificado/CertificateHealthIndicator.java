@@ -50,7 +50,6 @@ public class CertificateHealthIndicator implements HealthIndicator {
             if (!aliases.hasMoreElements()) {
                 return Health.down()
                         .withDetail("reason", "No certificate entries found in keystore")
-                        .withDetail("path", path)
                         .build();
             }
 
@@ -72,21 +71,18 @@ public class CertificateHealthIndicator implements HealthIndicator {
                     .withDetail("validFrom", notBefore.toString())
                     .withDetail("validUntil", notAfter.toString())
                     .withDetail("daysUntilExpiry", daysUntilExpiry)
-                    .withDetail("path", path)
                     .build();
         } catch (java.io.FileNotFoundException e) {
             return Health.down()
-                    .withDetail("reason", "Certificate file not found: " + path)
+                    .withDetail("reason", "Certificate file not found. Verifique a configuracao NFSE_CERT_PATH.")
                     .build();
         } catch (java.io.IOException e) {
             return Health.down()
                     .withDetail("reason", "Failed to read certificate: " + e.getMessage())
-                    .withDetail("path", path)
                     .build();
         } catch (Exception e) {
             return Health.down()
                     .withDetail("reason", "Certificate validation failed: " + e.getMessage())
-                    .withDetail("path", path)
                     .build();
         }
     }

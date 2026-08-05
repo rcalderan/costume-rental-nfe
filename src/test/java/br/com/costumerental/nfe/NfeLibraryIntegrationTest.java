@@ -8,6 +8,7 @@ import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeConfigFactory;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeLibraryAdapter;
 import br.com.costumerental.nfe.xml.AccessKeyGenerator;
+import br.com.costumerental.nfe.xml.IbgeCityCodeResolver;
 import br.com.costumerental.nfe.xml.NfeXmlAssembler;
 import br.com.swconsultoria.certificado.Certificado;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
@@ -24,7 +25,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = {NfeProperties.class, CertificateLoader.class, NfeConfigFactory.class,
-        NfeXmlAssembler.class, AccessKeyGenerator.class, NfeLibraryAdapter.class})
+        NfeXmlAssembler.class, AccessKeyGenerator.class, IbgeCityCodeResolver.class, NfeLibraryAdapter.class})
 @EnableConfigurationProperties
 @ActiveProfiles("test")
 class NfeLibraryIntegrationTest {

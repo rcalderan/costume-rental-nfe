@@ -8,6 +8,8 @@ import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import org.springframework.stereotype.Component;
 
+import static org.springframework.util.StringUtils.hasText;
+
 import javax.xml.bind.JAXBException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,10 +26,12 @@ public class NfeXmlAssembler {
 
     private final NfeProperties properties;
     private final AccessKeyGenerator accessKeyGenerator;
+    private final IbgeCityCodeResolver cityCodeResolver;
 
-    public NfeXmlAssembler(NfeProperties properties, AccessKeyGenerator accessKeyGenerator) {
+    public NfeXmlAssembler(NfeProperties properties, AccessKeyGenerator accessKeyGenerator, IbgeCityCodeResolver cityCodeResolver) {
         this.properties = properties;
         this.accessKeyGenerator = accessKeyGenerator;
+        this.cityCodeResolver = cityCodeResolver;
     }
 
     public TEnviNFe build(NfeEmissionRequest request) {
@@ -131,6 +135,12 @@ public class NfeXmlAssembler {
     }
 
     private String buildDest(CustomerInfo customer) {
+        String cityCode = hasText(customer.getCityCode())
+                ? customer.getCityCode()
+                : cityCodeResolver.resolve(customer.getCityName(), customer.getState());
+        if (!hasText(cityCode)) {
+            throw new IllegalArgumentException("Codigo IBGE do municipio do destinatario nao pode ser vazio");
+        }
         StringBuilder sb = new StringBuilder();
         sb.append("<dest>");
         String doc = digitsOnly(customer.getDocument());
@@ -147,7 +157,7 @@ public class NfeXmlAssembler {
         sb.append("<xLgr>").append(escape(customer.getStreet())).append("</xLgr>");
         sb.append("<nro>").append(escape(customer.getNumber())).append("</nro>");
         sb.append("<xBairro>").append(escape(customer.getNeighborhood())).append("</xBairro>");
-        sb.append("<cMun>").append(escape(customer.getCityCode())).append("</cMun>");
+        sb.append("<cMun>").append(escape(cityCode)).append("</cMun>");
         sb.append("<xMun>").append(escape(customer.getCityName())).append("</xMun>");
         sb.append("<UF>").append(escape(customer.getState())).append("</UF>");
         sb.append("<CEP>").append(digitsOnly(customer.getZipCode())).append("</CEP>");

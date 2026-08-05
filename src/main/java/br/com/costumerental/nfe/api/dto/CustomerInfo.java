@@ -33,7 +33,6 @@ public class CustomerInfo implements Serializable {
     @NotBlank(message = "Bairro e obrigatorio")
     private String neighborhood;
 
-    @NotBlank(message = "Codigo do municipio e obrigatorio")
     private String cityCode;
 
     @NotBlank(message = "Nome do municipio e obrigatorio")

@@ -25,21 +25,21 @@ public class CertificateLoader {
         String password = properties.getCertificate().getPassword();
 
         if (path == null || path.isBlank()) {
-            throw new CertificadoException("Caminho do certificado digital nao configurado (NFSE_CERT_PATH).");
+            throw new CertificadoException("Caminho do certificado digital nao configurado.");
         }
         if (password == null || password.isBlank()) {
-            throw new CertificadoException("Senha do certificado digital nao configurada (NFSE_CERT_PASSWORD).");
+            throw new CertificadoException("Senha do certificado digital nao configurada.");
         }
 
         Path certPath = Paths.get(path);
         if (!Files.exists(certPath)) {
-            throw new CertificadoException("Certificado nao encontrado em: " + path);
+            throw new CertificadoException("Certificado digital nao encontrado.");
         }
 
         try {
             return CertificadoService.certificadoPfx(path, password);
         } catch (java.io.FileNotFoundException e) {
-            throw new CertificadoException("Certificado nao encontrado em: " + path, e);
+            throw new CertificadoException("Certificado digital nao encontrado.", e);
         }
     }
 }

@@ -49,7 +49,8 @@ class NfeXmlAssemblerTest {
         properties.setProcessoVersao("1.0");
 
         AccessKeyGenerator accessKeyGenerator = new AccessKeyGenerator(properties);
-        return new NfeXmlAssembler(properties, accessKeyGenerator);
+        IbgeCityCodeResolver cityCodeResolver = new IbgeCityCodeResolver();
+        return new NfeXmlAssembler(properties, accessKeyGenerator, cityCodeResolver);
     }
 
     @Test
