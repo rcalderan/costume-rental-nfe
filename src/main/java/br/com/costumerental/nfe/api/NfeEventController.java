@@ -79,7 +79,9 @@ public class NfeEventController {
     }
 
     private HttpStatus statusFor(NfeEventResponse response) {
-        return response.getStatus() == NfeStatus.AUTHORIZED ? HttpStatus.OK : HttpStatus.UNPROCESSABLE_ENTITY;
+        return (response.getStatus() == NfeStatus.AUTHORIZED || response.getStatus() == NfeStatus.CANCELLED)
+                ? HttpStatus.OK
+                : HttpStatus.UNPROCESSABLE_ENTITY;
     }
 
     private HttpStatus statusFor(NfeInutilizacaoResponse response) {

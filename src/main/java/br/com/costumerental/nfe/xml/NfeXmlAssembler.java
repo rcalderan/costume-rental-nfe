@@ -14,14 +14,18 @@ import javax.xml.bind.JAXBException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Component
 public class NfeXmlAssembler {
 
     private static final String NFE_NS = "http://www.portalfiscal.inf.br/nfe";
-    private static final DateTimeFormatter ISO_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+    static final DateTimeFormatter ISO_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX");
+    private static final Pattern LONG_DASHES = Pattern.compile("[\\u2011\\u2013\\u2014]");
+    private static final Pattern OUTSIDE_NFE_RANGE = Pattern.compile("[^\\x20-\\xFF]");
     private static final String XNOME_DEST_HOMOLOGACAO = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
 
     private final NfeProperties properties;
@@ -44,7 +48,7 @@ public class NfeXmlAssembler {
     }
 
     String buildXmlString(NfeEmissionRequest request) {
-        OffsetDateTime issueDate = OffsetDateTime.now();
+        OffsetDateTime issueDate = OffsetDateTime.now(ZoneId.of("America/Sao_Paulo"));
         String invoiceNumber = accessKeyGenerator.generateInvoiceNumber();
         String cnf = accessKeyGenerator.generateCNF();
         String accessKey = accessKeyGenerator.generate(issueDate, properties.getSerie(), invoiceNumber, cnf);
@@ -126,9 +130,8 @@ public class NfeXmlAssembler {
             sb.append("<fone>").append(digitsOnly(emit.getFone())).append("</fone>");
         }
         sb.append("</enderEmit>");
-        if (emit.getIe() != null && !emit.getIe().isBlank()) {
-            sb.append("<IE>").append(escape(emit.getIe())).append("</IE>");
-        }
+        String ie = emit.getIe() != null && !emit.getIe().isBlank() ? emit.getIe() : "ISENTO";
+        sb.append("<IE>").append(escape(ie)).append("</IE>");
         sb.append("<CRT>").append(escape(emit.getCrt())).append("</CRT>");
         sb.append("</emit>");
         return sb.toString();
@@ -330,10 +333,9 @@ public class NfeXmlAssembler {
     }
 
     private static String escape(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("&", "&amp;")
+        String sanitized = value == null ? "" : LONG_DASHES.matcher(value).replaceAll("-");
+        sanitized = OUTSIDE_NFE_RANGE.matcher(sanitized).replaceAll("");
+        return sanitized.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")

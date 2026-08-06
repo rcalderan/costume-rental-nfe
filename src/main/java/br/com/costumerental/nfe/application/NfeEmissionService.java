@@ -11,6 +11,7 @@ import br.com.swconsultoria.certificado.exception.CertificadoException;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.exception.NfeException;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
+import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TRetEnviNFe;
 import org.springframework.stereotype.Service;
 
@@ -43,23 +44,36 @@ public class NfeEmissionService {
             String signedXml = libraryAdapter.toXml(signedEnviNFe);
             FiscalDocument document = fiscalDocumentService.saveSigned(extractAccessKey(signedEnviNFe), signedXml, request);
 
-            TRetEnviNFe retorno = libraryAdapter.send(config, signedEnviNFe);
+            TRetEnviNFe retorno;
+            try {
+                retorno = libraryAdapter.send(config, signedEnviNFe);
+            } catch (NfeException sendException) {
+                throw new br.com.costumerental.nfe.exception.NfeBusinessException(
+                        "Erro na comunicacao com a SEFAZ: " + sendException.getMessage(), signedXml, sendException);
+            }
             String authorizedXml = responseMapper.isAuthorized(retorno)
                     ? libraryAdapter.buildNfeProc(signedEnviNFe, retorno)
                     : null;
             NfeEmissionResponse response = responseMapper.map(retorno, signedXml, authorizedXml);
+            fillNumberAndSeries(response, signedEnviNFe);
             fiscalDocumentService.updateAfterSefaz(document, response);
             return response;
         } catch (CertificadoException e) {
             throw new br.com.costumerental.nfe.exception.NfeBusinessException("Erro no certificado digital: " + e.getMessage(), e);
         } catch (NfeException e) {
-            throw new br.com.costumerental.nfe.exception.NfeBusinessException("Erro na comunicacao com a SEFAZ: " + e.getMessage(), e);
+            throw new br.com.costumerental.nfe.exception.NfeBusinessException("Erro ao assinar/validar XML: " + e.getMessage(), e);
         }
     }
 
     private String extractAccessKey(TEnviNFe signedEnviNFe) {
         String id = signedEnviNFe.getNFe().get(0).getInfNFe().getId();
         return id.substring(3);
+    }
+
+    private void fillNumberAndSeries(NfeEmissionResponse response, TEnviNFe signedEnviNFe) {
+        TNFe.InfNFe.Ide ide = signedEnviNFe.getNFe().get(0).getInfNFe().getIde();
+        response.setNumber(ide.getNNF());
+        response.setSeries(ide.getSerie());
     }
 
     public NfeEmissionResponse buildAndSign(NfeEmissionRequest request) {

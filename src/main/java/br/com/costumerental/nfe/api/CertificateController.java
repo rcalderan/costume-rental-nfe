@@ -1,6 +1,7 @@
 package br.com.costumerental.nfe.api;
 
 import br.com.costumerental.nfe.api.dto.CertificateDetailsResponse;
+import br.com.costumerental.nfe.application.IssuerConfigService;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.swconsultoria.certificado.Certificado;
@@ -30,10 +31,14 @@ public class CertificateController {
 
     private final CertificateLoader certificateLoader;
     private final NfeProperties properties;
+    private final IssuerConfigService issuerConfigService;
 
-    public CertificateController(CertificateLoader certificateLoader, NfeProperties properties) {
+    public CertificateController(CertificateLoader certificateLoader,
+                                 NfeProperties properties,
+                                 IssuerConfigService issuerConfigService) {
         this.certificateLoader = certificateLoader;
         this.properties = properties;
+        this.issuerConfigService = issuerConfigService;
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -58,8 +63,7 @@ public class CertificateController {
             Files.write(tempPath, file.getBytes());
             Certificado certificado = certificateLoader.load(tempPath.toString(), password);
             Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-            properties.getCertificate().setPath(targetPath.toString());
-            properties.getCertificate().setPassword(password);
+            issuerConfigService.activate(properties.getEmit().getCnpj(), targetPath.toString(), password);
             return ResponseEntity.ok(toResponse(certificado));
         } catch (CertificadoException e) {
             deleteQuietly(tempPath);

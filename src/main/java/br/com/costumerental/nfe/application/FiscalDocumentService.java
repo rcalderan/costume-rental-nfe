@@ -7,6 +7,7 @@ import br.com.costumerental.nfe.domain.FiscalDocumentType;
 import br.com.costumerental.nfe.domain.NfeStatus;
 import br.com.costumerental.nfe.repository.FiscalDocumentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -20,6 +21,7 @@ public class FiscalDocumentService {
         this.repository = repository;
     }
 
+    @Transactional
     public FiscalDocument saveSigned(String accessKey, String signedXml, NfeEmissionRequest request) {
         FiscalDocument document = new FiscalDocument();
         document.setAccessKey(accessKey);
@@ -32,6 +34,7 @@ public class FiscalDocumentService {
         return repository.save(document);
     }
 
+    @Transactional
     public void updateAfterSefaz(FiscalDocument document, NfeEmissionResponse response) {
         document.setStatus(response.getStatus());
         document.setProtocol(response.getProtocol());
@@ -40,10 +43,12 @@ public class FiscalDocumentService {
         repository.save(document);
     }
 
+    @Transactional
     public Optional<FiscalDocument> findByAccessKey(String accessKey) {
         return repository.findByAccessKey(accessKey);
     }
 
+    @Transactional
     public void updateFromConsultation(FiscalDocument document, NfeStatus status, String protocol,
                                         String authorizedXml, String rejectionReason) {
         document.setStatus(status);

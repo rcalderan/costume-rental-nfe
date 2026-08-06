@@ -49,7 +49,9 @@ class NfeEventXmlAssemblerTest {
         assertThat(inf.getChNFe()).isEqualTo(ACCESS_KEY);
         assertThat(inf.getCNPJ()).isEqualTo("00000000000191");
         assertThat(inf.getDetEvento().getNProt()).isEqualTo("135260000000000");
-        assertThat(inf.getId()).startsWith("ID110111" + ACCESS_KEY);
+        assertThat(inf.getNSeqEvento()).isEqualTo("1");
+        assertThat(inf.getId()).isEqualTo("ID110111" + ACCESS_KEY + "01");
+        assertThat(inf.getDhEvento()).matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}");
     }
 
     @Test

@@ -28,12 +28,13 @@ public class NfeEventResponseMapper {
 
     public NfeEventResponse mapCancelamento(br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEnvEvento retorno) {
         TRetEvento.InfEvento inf = firstEvent(retorno.getRetEvento());
+        NfeStatus status = resolveCancelamentoStatus(retorno.getCStat(), inf);
         return NfeEventResponse.builder()
                 .accessKey(inf != null ? inf.getChNFe() : null)
                 .eventType(NfeEventType.CANCELAMENTO)
                 .sequence(inf != null ? inf.getNSeqEvento() : null)
                 .protocol(inf != null ? inf.getNProt() : null)
-                .status(resolveStatus(retorno.getCStat(), inf))
+                .status(status)
                 .statusCode(resolveCode(retorno.getCStat(), inf))
                 .statusMessage(resolveMessage(retorno.getCStat(), retorno.getXMotivo(), inf))
                 .build();
@@ -150,6 +151,15 @@ public class NfeEventResponseMapper {
             return null;
         }
         return events.get(0).getInfEvento();
+    }
+
+    private NfeStatus resolveCancelamentoStatus(String headerStatus, Object infEvento) {
+        String code = resolveCode(headerStatus, infEvento);
+        if ("573".equals(code)) {
+            return NfeStatus.CANCELLED;
+        }
+        NfeStatus status = resolveStatus(headerStatus, infEvento);
+        return status == NfeStatus.AUTHORIZED ? NfeStatus.CANCELLED : status;
     }
 
     private NfeStatus resolveStatus(String headerStatus, Object infEvento) {

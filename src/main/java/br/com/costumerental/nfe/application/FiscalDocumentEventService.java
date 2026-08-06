@@ -10,6 +10,7 @@ import br.com.costumerental.nfe.domain.NfeStatus;
 import br.com.costumerental.nfe.repository.FiscalDocumentEventRepository;
 import br.com.costumerental.nfe.repository.FiscalDocumentInutilizationRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FiscalDocumentEventService {
@@ -26,6 +27,7 @@ public class FiscalDocumentEventService {
         this.fiscalDocumentService = fiscalDocumentService;
     }
 
+    @Transactional
     public FiscalDocumentEvent saveEvent(String accessKey, NfeEventType eventType, String sequence,
                                           String eventXml, NfeEventResponse response) {
         FiscalDocumentEvent event = new FiscalDocumentEvent();
@@ -40,17 +42,19 @@ public class FiscalDocumentEventService {
         return eventRepository.save(event);
     }
 
+    @Transactional
     public void updateDocumentAfterCancellation(String accessKey, NfeEventResponse response) {
-        if (response.getStatus() != NfeStatus.AUTHORIZED) {
+        if (response.getStatus() != NfeStatus.CANCELLED) {
             return;
         }
         fiscalDocumentService.findByAccessKey(accessKey).ifPresent(doc -> {
-            doc.setStatus(NfeStatus.DENIED);
-            fiscalDocumentService.updateFromConsultation(doc, NfeStatus.DENIED, response.getProtocol(),
+            doc.setStatus(NfeStatus.CANCELLED);
+            fiscalDocumentService.updateFromConsultation(doc, NfeStatus.CANCELLED, response.getProtocol(),
                     doc.getAuthorizedXml(), response.getStatusMessage());
         });
     }
 
+    @Transactional
     public FiscalDocumentInutilization saveInutilization(String eventXml, NfeInutilizacaoRequest request,
                                                           NfeInutilizacaoResponse response) {
         FiscalDocumentInutilization inutilization = new FiscalDocumentInutilization();

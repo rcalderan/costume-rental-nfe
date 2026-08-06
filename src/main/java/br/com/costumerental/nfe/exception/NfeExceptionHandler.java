@@ -16,9 +16,12 @@ import java.util.Map;
 public class NfeExceptionHandler {
 
     @ExceptionHandler(NfeBusinessException.class)
-    public ResponseEntity<Map<String, String>> handleBusinessException(NfeBusinessException ex) {
-        Map<String, String> error = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> handleBusinessException(NfeBusinessException ex) {
+        Map<String, Object> error = new HashMap<>();
         error.put("error", ex.getMessage());
+        if (ex.getXml() != null) {
+            error.put("data", ex.getXml());
+        }
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 

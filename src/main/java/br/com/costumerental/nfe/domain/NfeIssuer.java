@@ -1,0 +1,100 @@
+package br.com.costumerental.nfe.domain;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import java.time.LocalDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@Entity
+@Table(name = "nfe_issuer")
+public class NfeIssuer {
+
+    @Id
+    @Column(nullable = false, length = 14)
+    private String cnpj;
+
+    @Column(nullable = false, length = 255)
+    private String razaoSocial;
+
+    @Column(length = 255)
+    private String nomeFantasia;
+
+    @Column(length = 20)
+    private String ie;
+
+    @Column(length = 20)
+    private String im;
+
+    @Column(nullable = false, length = 1)
+    private String crt;
+
+    @Column(length = 20)
+    private String fone;
+
+    @Column(nullable = false, length = 255)
+    private String logradouro;
+
+    @Column(nullable = false, length = 255)
+    private String numero;
+
+    @Column(nullable = false, length = 255)
+    private String bairro;
+
+    @Column(nullable = false, length = 255)
+    private String municipioCodigo;
+
+    @Column(nullable = false, length = 255)
+    private String municipioNome;
+
+    @Column(nullable = false, length = 2)
+    private String uf;
+
+    @Column(nullable = false, length = 8)
+    private String cep;
+
+    @Column(nullable = false, length = 255)
+    private String paisCodigo;
+
+    @Column(nullable = false, length = 255)
+    private String paisNome;
+
+    @Column(length = 500)
+    private String certificatePath;
+
+    @Column(length = 500)
+    private String encryptedPassword;
+
+    @Column(length = 10)
+    private String certificateTipo;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
