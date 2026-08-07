@@ -75,12 +75,25 @@ class NfeXmlAssemblerTest {
     }
 
     @Test
-    void shouldOmitIeWhenBlank() {
+    void shouldSanitizeEmDashInProductDescription() {
+        NfeEmissionRequest request = sampleRequest();
+        NfeItemRequest item = request.getItems().get(0);
+        item.setDescription("Vestido Casual Floral — M Floral");
+
+        String xml = assembler.buildXmlString(request);
+
+        assertThat(xml).contains("Vestido Casual Floral - M Floral");
+        assertThat(xml).doesNotContain("—");
+    }
+
+    @Test
+    void shouldUseExemptWhenIeBlank() {
         NfeXmlAssembler blankIeAssembler = createAssembler("");
         NfeEmissionRequest request = sampleRequest();
         String xml = blankIeAssembler.buildXmlString(request);
 
-        assertThat(xml).doesNotContain("<IE>");
+        assertThat(xml).contains("<IE>ISENTO</IE>");
+        assertThat(xml.indexOf("<IE>")).isLessThan(xml.indexOf("<CRT>"));
         assertThat(blankIeAssembler.build(request)).isNotNull();
     }
 

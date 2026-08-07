@@ -5,5 +5,6 @@ public enum NfeStatus {
     DENIED,
     REJECTED,
     PROCESSING,
+    CANCELLED,
     ERROR
 }

@@ -21,9 +21,10 @@ public class CertificateLoader {
     }
 
     public Certificado load() throws CertificadoException {
-        String path = properties.getCertificate().getPath();
-        String password = properties.getCertificate().getPassword();
+        return load(properties.getCertificate().getPath(), properties.getCertificate().getPassword());
+    }
 
+    public Certificado load(String path, String password) throws CertificadoException {
         if (path == null || path.isBlank()) {
             throw new CertificadoException("Caminho do certificado digital nao configurado.");
         }

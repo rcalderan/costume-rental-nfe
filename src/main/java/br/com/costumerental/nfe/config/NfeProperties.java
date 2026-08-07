@@ -48,6 +48,8 @@ public class NfeProperties {
 
         private String ie;
 
+        private String im;
+
         @NotBlank
         @Pattern(regexp = "[A-Z]{2}", message = "UF deve ser sigla de 2 letras maiusculas")
         private String uf;
@@ -105,10 +107,8 @@ public class NfeProperties {
     @Setter
     public static class CertificateProperties {
 
-        @NotBlank
         private String path;
 
-        @NotBlank
         private String password;
 
         @NotBlank

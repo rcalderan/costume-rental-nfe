@@ -12,7 +12,7 @@ import br.com.swconsultoria.nfe.schema_4.inutNFe.TInutNFe;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 
 @Component
 public class NfeEventXmlAssembler {
@@ -38,7 +38,8 @@ public class NfeEventXmlAssembler {
         inf.setChNFe(accessKey);
         inf.setDhEvento(currentFormattedDateTime());
         inf.setTpEvento("110111");
-        inf.setNSeqEvento(leftPad(request.getSequence(), 2, '0'));
+        String eventSequence = normalizeEventSequence(request.getSequence());
+        inf.setNSeqEvento(eventSequence);
         inf.setVerEvento(EVENT_VERSION);
 
         br.com.swconsultoria.nfe.schema.envEventoCancNFe.TEvento.InfEvento.DetEvento det = new br.com.swconsultoria.nfe.schema.envEventoCancNFe.TEvento.InfEvento.DetEvento();
@@ -48,7 +49,7 @@ public class NfeEventXmlAssembler {
         det.setVersao(EVENT_VERSION);
         inf.setDetEvento(det);
 
-        inf.setId(buildEventId("110111", accessKey, request.getSequence()));
+        inf.setId(buildEventId("110111", accessKey, eventSequence));
         evento.setInfEvento(inf);
         envEvento.getEvento().add(evento);
         return envEvento;
@@ -69,7 +70,8 @@ public class NfeEventXmlAssembler {
         inf.setChNFe(accessKey);
         inf.setDhEvento(currentFormattedDateTime());
         inf.setTpEvento("110110");
-        inf.setNSeqEvento(leftPad(request.getSequence(), 2, '0'));
+        String eventSequence = normalizeEventSequence(request.getSequence());
+        inf.setNSeqEvento(eventSequence);
         inf.setVerEvento(EVENT_VERSION);
 
         br.com.swconsultoria.nfe.schema.envcce.TEvento.InfEvento.DetEvento det = new br.com.swconsultoria.nfe.schema.envcce.TEvento.InfEvento.DetEvento();
@@ -79,7 +81,7 @@ public class NfeEventXmlAssembler {
         det.setVersao(EVENT_VERSION);
         inf.setDetEvento(det);
 
-        inf.setId(buildEventId("110110", accessKey, request.getSequence()));
+        inf.setId(buildEventId("110110", accessKey, eventSequence));
         evento.setInfEvento(inf);
         envEvento.getEvento().add(evento);
         return envEvento;
@@ -100,7 +102,8 @@ public class NfeEventXmlAssembler {
         inf.setChNFe(accessKey);
         inf.setDhEvento(currentFormattedDateTime());
         inf.setTpEvento(type.getEventCode());
-        inf.setNSeqEvento("01");
+        String eventSequence = "1";
+        inf.setNSeqEvento(eventSequence);
         inf.setVerEvento(EVENT_VERSION);
 
         br.com.swconsultoria.nfe.schema.envConfRecebto.TEvento.InfEvento.DetEvento det = new br.com.swconsultoria.nfe.schema.envConfRecebto.TEvento.InfEvento.DetEvento();
@@ -108,7 +111,7 @@ public class NfeEventXmlAssembler {
         det.setVersao(EVENT_VERSION);
         inf.setDetEvento(det);
 
-        inf.setId(buildEventId(type.getEventCode(), accessKey, "1"));
+        inf.setId(buildEventId(type.getEventCode(), accessKey, eventSequence));
         evento.setInfEvento(inf);
         envEvento.getEvento().add(evento);
         return envEvento;
@@ -154,7 +157,15 @@ public class NfeEventXmlAssembler {
     }
 
     private String currentFormattedDateTime() {
-        return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now());
+        return NfeXmlAssembler.ISO_FMT.format(OffsetDateTime.now(ZoneId.of("America/Sao_Paulo")));
+    }
+
+    private String normalizeEventSequence(String sequence) {
+        String digits = digitsOnly(sequence != null ? sequence : "1");
+        if (digits.isEmpty()) {
+            return "1";
+        }
+        return String.valueOf(Integer.parseInt(digits));
     }
 
     private String buildEventId(String eventCode, String accessKey, String sequence) {

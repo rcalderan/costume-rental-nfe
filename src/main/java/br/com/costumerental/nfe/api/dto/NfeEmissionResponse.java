@@ -15,6 +15,8 @@ import java.io.Serializable;
 public class NfeEmissionResponse implements Serializable {
 
     private String accessKey;
+    private String number;
+    private String series;
     private String protocol;
     private String receiptNumber;
     private NfeStatus status;

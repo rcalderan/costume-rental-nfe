@@ -5,10 +5,13 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
+CERT_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
 nfe:
   emit:
     cnpj: "00000000000191"
     ie: "111111111111"
+    im: "222222222222"
     uf: "SP"
     razao-social: "Emitente Homologacao"
     crt: "1"

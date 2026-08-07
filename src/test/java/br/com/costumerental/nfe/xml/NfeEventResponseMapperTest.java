@@ -44,7 +44,7 @@ class NfeEventResponseMapperTest {
         NfeEventResponse response = mapper.mapCancelamento(retorno);
 
         assertThat(response.getEventType()).isEqualTo(NfeEventType.CANCELAMENTO);
-        assertThat(response.getStatus()).isEqualTo(NfeStatus.PROCESSING);
+        assertThat(response.getStatus()).isEqualTo(NfeStatus.CANCELLED);
         assertThat(response.getStatusCode()).isEqualTo("135");
         assertThat(response.getProtocol()).isEqualTo("135260000000001");
     }
