@@ -48,7 +48,7 @@ jobs:
     if: github.event.pull_request.merged == true && github.base_ref == 'develop'
     environment: develop
     env:
-      ECR_REPOSITORY: costume-rental-nfe-hk
+      ECR_REPOSITORY: costumerentalnfe
     steps:
       - uses: actions/checkout@v4
 
