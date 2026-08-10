@@ -17,6 +17,10 @@ spring:
     enabled: false
 
 nfe:
+  security:
+    jwt:
+      secret: ${RENTFIT_JWT_SECRET}
+      issuer: rentafit-api
   emit:
     cnpj: ${NFE_EMIT_CNPJ}
     ie: ${NFE_EMIT_IE:}

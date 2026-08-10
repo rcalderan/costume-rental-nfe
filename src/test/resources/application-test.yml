@@ -8,6 +8,10 @@ spring:
 CERT_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
 
 nfe:
+  security:
+    jwt:
+      secret: "test-jwt-secret-must-be-at-least-32-characters-long"
+      issuer: "rentafit-api"
   emit:
     cnpj: "00000000000191"
     ie: "111111111111"
