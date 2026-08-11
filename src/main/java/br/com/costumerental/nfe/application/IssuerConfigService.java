@@ -31,33 +31,20 @@ public class IssuerConfigService {
 
     @PostConstruct
     public void loadDefaultIssuer() {
-        String defaultCnpj = properties.getEmit().getCnpj();
-        if (defaultCnpj == null || defaultCnpj.isBlank()) {
-            throw new IllegalStateException("NFE_EMIT_CNPJ não configurado. Não é possível determinar o emitente padrão.");
+        NfeIssuer issuer = issuerRepository.findFirstByActiveTrue()
+                .orElseGet(this::seedFromPropertiesIfPresent);
+        updateProperties(issuer);
+    }
+
+    private NfeIssuer seedFromPropertiesIfPresent() {
+        String cnpj = properties.getEmit().getCnpj();
+        if (cnpj == null || cnpj.isBlank()) {
+            throw new IllegalStateException("Nenhum emitente ativo encontrado na tabela nfe_issuer.");
         }
-        NfeIssuer issuer = issuerRepository.findById(defaultCnpj)
-                .orElseGet(() -> seedFromEnvironment(defaultCnpj));
-        updateProperties(issuer);
+        return seedFromProperties(cnpj);
     }
 
-    public void activate(String cnpj, String certificatePath, String certificatePassword) throws CertificadoException {
-        certificateLoader.load(certificatePath, certificatePassword);
-        NfeIssuer issuer = issuerRepository.findById(cnpj)
-                .orElseGet(() -> seedFromEnvironment(cnpj));
-        updateCertificate(issuer, certificatePath, certificatePassword);
-        updateProperties(issuer);
-        properties.getCertificate().setPassword(certificatePassword);
-    }
-
-    private void updateCertificate(NfeIssuer issuer, String certificatePath, String certificatePassword) {
-        issuer.setCertificatePath(certificatePath);
-        issuer.setEncryptedPassword(certificateEncryption.encrypt(certificatePassword));
-        issuer.setCertificateTipo(properties.getCertificate().getTipo());
-        issuer.setUpdatedAt(LocalDateTime.now());
-        issuerRepository.save(issuer);
-    }
-
-    private NfeIssuer seedFromEnvironment(String cnpj) {
+    private NfeIssuer seedFromProperties(String cnpj) {
         NfeIssuer issuer = new NfeIssuer();
         issuer.setCnpj(cnpj);
         issuer.setRazaoSocial(properties.getEmit().getRazaoSocial());
@@ -87,6 +74,23 @@ public class IssuerConfigService {
         return issuerRepository.save(issuer);
     }
 
+    public void activate(String certificatePath, String certificatePassword) throws CertificadoException {
+        certificateLoader.load(certificatePath, certificatePassword);
+        NfeIssuer issuer = issuerRepository.findFirstByActiveTrue()
+                .orElseThrow(() -> new IllegalStateException("Nenhum emitente ativo encontrado na tabela nfe_issuer."));
+        updateCertificate(issuer, certificatePath, certificatePassword);
+        updateProperties(issuer);
+        properties.getCertificate().setPassword(certificatePassword);
+    }
+
+    private void updateCertificate(NfeIssuer issuer, String certificatePath, String certificatePassword) {
+        issuer.setCertificatePath(certificatePath);
+        issuer.setEncryptedPassword(certificateEncryption.encrypt(certificatePassword));
+        issuer.setCertificateTipo(properties.getCertificate().getTipo());
+        issuer.setUpdatedAt(LocalDateTime.now());
+        issuerRepository.save(issuer);
+    }
+
     private void updateProperties(NfeIssuer issuer) {
         properties.getEmit().setCnpj(issuer.getCnpj());
         properties.getEmit().setRazaoSocial(issuer.getRazaoSocial());
@@ -95,15 +99,20 @@ public class IssuerConfigService {
         properties.getEmit().setIm(issuer.getIm());
         properties.getEmit().setCrt(issuer.getCrt());
         properties.getEmit().setFone(issuer.getFone());
-        properties.getEmit().getEndereco().setLogradouro(issuer.getLogradouro());
-        properties.getEmit().getEndereco().setNumero(issuer.getNumero());
-        properties.getEmit().getEndereco().setBairro(issuer.getBairro());
-        properties.getEmit().getEndereco().setMunicipioCodigo(issuer.getMunicipioCodigo());
-        properties.getEmit().getEndereco().setMunicipioNome(issuer.getMunicipioNome());
-        properties.getEmit().getEndereco().setUf(issuer.getUf());
-        properties.getEmit().getEndereco().setCep(issuer.getCep());
-        properties.getEmit().getEndereco().setPaisCodigo(issuer.getPaisCodigo());
-        properties.getEmit().getEndereco().setPaisNome(issuer.getPaisNome());
+        NfeProperties.EnderecoProperties endereco = properties.getEmit().getEndereco();
+        if (endereco == null) {
+            endereco = new NfeProperties.EnderecoProperties();
+            properties.getEmit().setEndereco(endereco);
+        }
+        endereco.setLogradouro(issuer.getLogradouro());
+        endereco.setNumero(issuer.getNumero());
+        endereco.setBairro(issuer.getBairro());
+        endereco.setMunicipioCodigo(issuer.getMunicipioCodigo());
+        endereco.setMunicipioNome(issuer.getMunicipioNome());
+        endereco.setUf(issuer.getUf());
+        endereco.setCep(issuer.getCep());
+        endereco.setPaisCodigo(issuer.getPaisCodigo());
+        endereco.setPaisNome(issuer.getPaisNome());
         properties.getCertificate().setPath(issuer.getCertificatePath());
         properties.getCertificate().setTipo(issuer.getCertificateTipo());
 

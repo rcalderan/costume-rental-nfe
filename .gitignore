@@ -35,3 +35,9 @@ target/
 ### Logs (podem conter XML assinado / CNPJ / certificado) ###
 *.log
 run-test.log
+
+### Graphify ###
+graphify-out/
+graphify*.json
+graphify*.html
+GRAPH_REPORT.md

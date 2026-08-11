@@ -63,7 +63,7 @@ public class CertificateController {
             Files.write(tempPath, file.getBytes());
             Certificado certificado = certificateLoader.load(tempPath.toString(), password);
             Files.move(tempPath, targetPath, StandardCopyOption.REPLACE_EXISTING);
-            issuerConfigService.activate(properties.getEmit().getCnpj(), targetPath.toString(), password);
+            issuerConfigService.activate(targetPath.toString(), password);
             return ResponseEntity.ok(toResponse(certificado));
         } catch (CertificadoException e) {
             deleteQuietly(tempPath);
