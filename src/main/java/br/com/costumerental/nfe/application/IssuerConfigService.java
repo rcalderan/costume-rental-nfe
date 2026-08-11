@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class IssuerConfigService {
@@ -31,17 +32,55 @@ public class IssuerConfigService {
 
     @PostConstruct
     public void loadDefaultIssuer() {
-        NfeIssuer issuer = issuerRepository.findFirstByActiveTrue()
-                .orElseGet(this::seedFromPropertiesIfPresent);
-        updateProperties(issuer);
+        Optional<NfeIssuer> issuer = issuerRepository.findFirstByActiveTrue();
+        issuer.ifPresent(this::updateProperties);
+        if (issuer.isEmpty()) {
+            String cnpj = properties.getEmit().getCnpj();
+            if (cnpj != null && !cnpj.isBlank()) {
+                updateProperties(seedFromProperties(cnpj));
+            }
+        }
     }
 
-    private NfeIssuer seedFromPropertiesIfPresent() {
-        String cnpj = properties.getEmit().getCnpj();
-        if (cnpj == null || cnpj.isBlank()) {
-            throw new IllegalStateException("Nenhum emitente ativo encontrado na tabela nfe_issuer.");
-        }
-        return seedFromProperties(cnpj);
+    public boolean isConfigured() {
+        return properties.getEmit().getCnpj() != null && !properties.getEmit().getCnpj().isBlank();
+    }
+
+    public Optional<NfeIssuer> findCurrentIssuer() {
+        return issuerRepository.findFirstByActiveTrue();
+    }
+
+    public NfeIssuer configureIssuer(IssuerSetupRequest request) {
+        NfeIssuer issuer = issuerRepository.findById(request.cnpj())
+                .orElse(new NfeIssuer());
+        issuer.setCnpj(request.cnpj());
+        issuer.setRazaoSocial(request.razaoSocial());
+        issuer.setNomeFantasia(request.nomeFantasia());
+        issuer.setIe(request.ie());
+        issuer.setIm(request.im());
+        issuer.setCrt(request.crt());
+        issuer.setFone(request.fone());
+        issuer.setLogradouro(request.logradouro());
+        issuer.setNumero(request.numero());
+        issuer.setBairro(request.bairro());
+        issuer.setMunicipioCodigo(request.municipioCodigo());
+        issuer.setMunicipioNome(request.municipioNome());
+        issuer.setUf(request.uf());
+        issuer.setCep(request.cep());
+        issuer.setPaisCodigo(request.paisCodigo());
+        issuer.setPaisNome(request.paisNome());
+        issuer.setActive(true);
+
+        issuerRepository.findAll().stream()
+                .filter(i -> !request.cnpj().equals(i.getCnpj()) && i.isActive())
+                .forEach(i -> {
+                    i.setActive(false);
+                    issuerRepository.save(i);
+                });
+
+        NfeIssuer saved = issuerRepository.save(issuer);
+        updateProperties(saved);
+        return saved;
     }
 
     private NfeIssuer seedFromProperties(String cnpj) {

@@ -91,13 +91,46 @@ class IssuerConfigServiceTest {
     }
 
     @Test
-    void shouldThrowWhenNoActiveIssuerAndNoCnpjConfigured() {
+    void shouldLeavePropertiesEmptyWhenNoActiveIssuerAndNoCnpjConfigured() {
         properties.getEmit().setCnpj("");
         when(issuerRepository.findFirstByActiveTrue()).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.loadDefaultIssuer())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Nenhum emitente ativo");
+        service.loadDefaultIssuer();
+
+        assertThat(service.isConfigured()).isFalse();
+    }
+
+    @Test
+    void shouldConfigureIssuerFromRequest() {
+        when(issuerRepository.findById("08299621000120")).thenReturn(Optional.empty());
+        when(issuerRepository.findAll()).thenReturn(java.util.List.of());
+        when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IssuerSetupRequest request = new IssuerSetupRequest(
+                "08299621000120",
+                "NOIVA MODAS E ACESSORIOS LTDA",
+                null,
+                null,
+                null,
+                "1",
+                null,
+                "Rua Teste",
+                "0",
+                "Centro",
+                "3548906",
+                "Sao Carlos",
+                "SP",
+                "13560000",
+                "1058",
+                "BRASIL"
+        );
+
+        NfeIssuer issuer = service.configureIssuer(request);
+
+        assertThat(issuer.getCnpj()).isEqualTo("08299621000120");
+        assertThat(issuer.isActive()).isTrue();
+        assertThat(service.isConfigured()).isTrue();
+        assertThat(properties.getEmit().getRazaoSocial()).isEqualTo("NOIVA MODAS E ACESSORIOS LTDA");
     }
 
     @Test

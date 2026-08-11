@@ -44,12 +44,16 @@ class NfeEmissionServiceTest {
     @Mock
     private FiscalDocumentService fiscalDocumentService;
 
+    @Mock
+    private IssuerConfigService issuerConfigService;
+
     private NfeEmissionService service;
 
     @BeforeEach
     void setUp() {
         service = new NfeEmissionService(configProvider, xmlAssembler, libraryAdapter, responseMapper,
-                fiscalDocumentService);
+                fiscalDocumentService, issuerConfigService);
+        when(issuerConfigService.isConfigured()).thenReturn(true);
     }
 
     @Test

@@ -23,20 +23,24 @@ public class NfeEmissionService {
     private final NfeLibraryAdapter libraryAdapter;
     private final NfeResponseMapper responseMapper;
     private final FiscalDocumentService fiscalDocumentService;
+    private final IssuerConfigService issuerConfigService;
 
     public NfeEmissionService(NfeSefazConfigProvider configProvider,
                               NfeXmlAssembler xmlAssembler,
                               NfeLibraryAdapter libraryAdapter,
                               NfeResponseMapper responseMapper,
-                              FiscalDocumentService fiscalDocumentService) {
+                              FiscalDocumentService fiscalDocumentService,
+                              IssuerConfigService issuerConfigService) {
         this.configProvider = configProvider;
         this.xmlAssembler = xmlAssembler;
         this.libraryAdapter = libraryAdapter;
         this.responseMapper = responseMapper;
         this.fiscalDocumentService = fiscalDocumentService;
+        this.issuerConfigService = issuerConfigService;
     }
 
     public NfeEmissionResponse emit(NfeEmissionRequest request) {
+        ensureIssuerConfigured();
         try {
             ConfiguracoesNfe config = configProvider.buildConfig();
             TEnviNFe enviNFe = xmlAssembler.build(request);
@@ -65,6 +69,13 @@ public class NfeEmissionService {
         }
     }
 
+    private void ensureIssuerConfigured() {
+        if (!issuerConfigService.isConfigured()) {
+            throw new br.com.costumerental.nfe.exception.NfeBusinessException(
+                    "Emitente não configurado. Configure o CNPJ do emitente antes de emitir notas.");
+        }
+    }
+
     private String extractAccessKey(TEnviNFe signedEnviNFe) {
         String id = signedEnviNFe.getNFe().get(0).getInfNFe().getId();
         return id.substring(3);
@@ -77,6 +88,7 @@ public class NfeEmissionService {
     }
 
     public NfeEmissionResponse buildAndSign(NfeEmissionRequest request) {
+        ensureIssuerConfigured();
         try {
             ConfiguracoesNfe config = configProvider.buildConfig();
             TEnviNFe enviNFe = xmlAssembler.build(request);
