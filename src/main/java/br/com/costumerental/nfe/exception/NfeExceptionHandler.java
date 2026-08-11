@@ -2,6 +2,7 @@ package br.com.costumerental.nfe.exception;
 
 import br.com.swconsultoria.certificado.exception.CertificadoException;
 import br.com.swconsultoria.nfe.exception.NfeException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class NfeExceptionHandler {
 
@@ -44,8 +46,14 @@ public class NfeExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        log.error("Erro interno nao tratado: {}", ex.getClass().getName(), ex);
         Map<String, String> error = new HashMap<>();
-        error.put("error", "Erro interno: " + ex.getMessage());
+        String msg = ex.getMessage();
+        if (msg == null && ex.getCause() != null) {
+            msg = ex.getCause().getClass().getSimpleName() + ": " + ex.getCause().getMessage();
+        }
+        error.put("error", "Erro interno: " + msg);
+        error.put("type", ex.getClass().getSimpleName());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

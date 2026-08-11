@@ -92,10 +92,15 @@ public class CertificateController {
 
     private Path resolveTargetPath(String originalName) {
         String configuredPath = properties.getCertificate().getPath();
-        Path basePath = Paths.get(configuredPath).toAbsolutePath();
-        Path targetDir = basePath.getParent();
-        if (targetDir == null) {
-            targetDir = Paths.get("").toAbsolutePath();
+        Path targetDir;
+        if (configuredPath == null || configuredPath.isBlank()) {
+            targetDir = Paths.get("/certs");
+        } else {
+            Path basePath = Paths.get(configuredPath).toAbsolutePath();
+            targetDir = basePath.getParent();
+            if (targetDir == null) {
+                targetDir = Paths.get("").toAbsolutePath();
+            }
         }
         String safeName = sanitizeFileName(originalName);
         return targetDir.resolve(safeName);
