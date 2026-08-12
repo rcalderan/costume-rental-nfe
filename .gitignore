@@ -31,6 +31,8 @@ target/
 *.p12
 *.jks
 .env
+# Excecao: certificado de teste (fixture, nao eh segredo real)
+!src/test/resources/test-cert.pfx
 
 ### Logs (podem conter XML assinado / CNPJ / certificado) ###
 *.log
