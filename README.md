@@ -14,11 +14,12 @@ Microserviço Spring Boot para emissão e eventos de NF-e (modelo 55) usando a b
 
 ## Configuração
 
-Defina as variáveis de ambiente antes de rodar (não há arquivo `.env`; use o mecanismo de variáveis de ambiente da sua shell/IDE/orquestrador):
+O CNPJ e IE do emitente são lidos da tabela `nfe_issuer` (banco `costume_rental_nfe`).
+Cadastre/ative o emitente via banco ou pelo endpoint de upload de certificado.
+
+Defina as demais variáveis de ambiente antes de rodar:
 
 ```bash
-export NFE_EMIT_CNPJ=00000000000191
-export NFE_EMIT_IE=111111111111
 export NFE_EMIT_UF=SP
 export NFE_AMBIENTE=2
 export NFSE_CERT_PATH=/caminho/certificado.pfx

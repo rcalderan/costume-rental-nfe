@@ -42,30 +42,22 @@ public class NfeProperties {
     @Setter
     public static class EmitProperties {
 
-        @NotBlank
-        @Pattern(regexp = "\\d{14}", message = "CNPJ deve conter 14 digitos")
         private String cnpj;
 
         private String ie;
 
         private String im;
 
-        @NotBlank
-        @Pattern(regexp = "[A-Z]{2}", message = "UF deve ser sigla de 2 letras maiusculas")
         private String uf;
 
-        @NotBlank
         private String razaoSocial;
 
         private String nomeFantasia;
 
         private String fone;
 
-        @NotBlank
-        @Pattern(regexp = "[123]", message = "CRT deve ser 1, 2 ou 3")
         private String crt;
 
-        @NotNull
         private EnderecoProperties endereco;
     }
 
@@ -73,33 +65,22 @@ public class NfeProperties {
     @Setter
     public static class EnderecoProperties {
 
-        @NotBlank
         private String logradouro;
 
-        @NotBlank
         private String numero;
 
-        @NotBlank
         private String bairro;
 
-        @NotBlank
         private String municipioCodigo;
 
-        @NotBlank
         private String municipioNome;
 
-        @NotBlank
-        @Pattern(regexp = "[A-Z]{2}")
         private String uf;
 
-        @NotBlank
-        @Pattern(regexp = "\\d{8}", message = "CEP deve conter 8 digitos")
         private String cep;
 
-        @NotBlank
         private String paisCodigo;
 
-        @NotBlank
         private String paisNome;
     }
 

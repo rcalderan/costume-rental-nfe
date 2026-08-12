@@ -17,7 +17,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,22 +47,10 @@ class IssuerConfigServiceTest {
         NfeProperties.EmitProperties emit = new NfeProperties.EmitProperties();
         emit.setCnpj("08299621000120");
         emit.setIe("637287665118");
-        emit.setIm("123456789");
         emit.setUf("SP");
         emit.setRazaoSocial("Emitente Teste");
         emit.setCrt("1");
-        emit.setFone("16333722363");
-
         NfeProperties.EnderecoProperties endereco = new NfeProperties.EnderecoProperties();
-        endereco.setLogradouro("Rua Teste");
-        endereco.setNumero("0");
-        endereco.setBairro("Centro");
-        endereco.setMunicipioCodigo("3548906");
-        endereco.setMunicipioNome("Sao Carlos");
-        endereco.setUf("SP");
-        endereco.setCep("13560000");
-        endereco.setPaisCodigo("1058");
-        endereco.setPaisNome("BRASIL");
         emit.setEndereco(endereco);
 
         NfeProperties.CertificateProperties certificate = new NfeProperties.CertificateProperties();
@@ -77,21 +64,22 @@ class IssuerConfigServiceTest {
     }
 
     @Test
-    void shouldLoadExistingIssuerAndUpdateProperties() {
+    void shouldLoadActiveIssuerAndUpdateProperties() {
         NfeIssuer issuer = buildIssuer("08299621000120");
         issuer.setEncryptedPassword("encrypted");
-        when(issuerRepository.findById("08299621000120")).thenReturn(Optional.of(issuer));
+        when(issuerRepository.findFirstByActiveTrue()).thenReturn(Optional.of(issuer));
         when(certificateEncryption.decrypt("encrypted")).thenReturn("decrypted-password");
 
         service.loadDefaultIssuer();
 
         assertThat(properties.getEmit().getRazaoSocial()).isEqualTo("Emitente Teste");
+        assertThat(properties.getEmit().getCnpj()).isEqualTo("08299621000120");
         assertThat(properties.getCertificate().getPassword()).isEqualTo("decrypted-password");
     }
 
     @Test
-    void shouldSeedIssuerFromEnvironmentWhenNotFound() {
-        when(issuerRepository.findById("08299621000120")).thenReturn(Optional.empty());
+    void shouldSeedIssuerFromPropertiesWhenNoActiveIssuerExists() {
+        when(issuerRepository.findFirstByActiveTrue()).thenReturn(Optional.empty());
         when(certificateEncryption.encrypt("password123")).thenReturn("encrypted");
         when(certificateEncryption.decrypt("encrypted")).thenReturn("password123");
         when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -99,35 +87,67 @@ class IssuerConfigServiceTest {
         service.loadDefaultIssuer();
 
         verify(issuerRepository).save(any(NfeIssuer.class));
-        assertThat(properties.getCertificate().getPassword()).isEqualTo("password123");
+        assertThat(properties.getEmit().getCnpj()).isEqualTo("08299621000120");
+    }
+
+    @Test
+    void shouldLeavePropertiesEmptyWhenNoActiveIssuerAndNoCnpjConfigured() {
+        properties.getEmit().setCnpj("");
+        when(issuerRepository.findFirstByActiveTrue()).thenReturn(Optional.empty());
+
+        service.loadDefaultIssuer();
+
+        assertThat(service.isConfigured()).isFalse();
+    }
+
+    @Test
+    void shouldConfigureIssuerFromRequest() {
+        when(issuerRepository.findById("08299621000120")).thenReturn(Optional.empty());
+        when(issuerRepository.findAll()).thenReturn(java.util.List.of());
+        when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        IssuerSetupRequest request = new IssuerSetupRequest(
+                "08299621000120",
+                "NOIVA MODAS E ACESSORIOS LTDA",
+                null,
+                null,
+                null,
+                "1",
+                null,
+                "Rua Teste",
+                "0",
+                "Centro",
+                "3548906",
+                "Sao Carlos",
+                "SP",
+                "13560000",
+                "1058",
+                "BRASIL"
+        );
+
+        NfeIssuer issuer = service.configureIssuer(request);
+
+        assertThat(issuer.getCnpj()).isEqualTo("08299621000120");
+        assertThat(issuer.isActive()).isTrue();
+        assertThat(service.isConfigured()).isTrue();
+        assertThat(properties.getEmit().getRazaoSocial()).isEqualTo("NOIVA MODAS E ACESSORIOS LTDA");
     }
 
     @Test
     void shouldActivateCertificateAndPersistIssuer() throws CertificadoException {
         NfeIssuer issuer = buildIssuer("08299621000120");
-        when(issuerRepository.findById("08299621000120")).thenReturn(Optional.of(issuer));
+        when(issuerRepository.findFirstByActiveTrue()).thenReturn(Optional.of(issuer));
         when(certificateLoader.load("/certs/new.pfx", "new-pass")).thenReturn(null);
         when(certificateEncryption.encrypt("new-pass")).thenReturn("new-encrypted");
         when(certificateEncryption.decrypt("new-encrypted")).thenReturn("new-pass");
         when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.activate("08299621000120", "/certs/new.pfx", "new-pass");
+        service.activate("/certs/new.pfx", "new-pass");
 
         assertThat(issuer.getCertificatePath()).isEqualTo("/certs/new.pfx");
         assertThat(issuer.getEncryptedPassword()).isEqualTo("new-encrypted");
         assertThat(properties.getCertificate().getPassword()).isEqualTo("new-pass");
         verify(certificateLoader).load("/certs/new.pfx", "new-pass");
-    }
-
-    @Test
-    void shouldThrowWhenDefaultCnpjIsMissing() {
-        properties.getEmit().setCnpj("");
-
-        assertThatThrownBy(() -> service.loadDefaultIssuer())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("NFE_EMIT_CNPJ");
-
-        verify(issuerRepository, never()).findById(any());
     }
 
     private NfeIssuer buildIssuer(String cnpj) {

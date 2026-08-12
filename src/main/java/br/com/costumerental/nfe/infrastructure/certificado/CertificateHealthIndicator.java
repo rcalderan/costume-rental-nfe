@@ -36,10 +36,12 @@ public class CertificateHealthIndicator implements HealthIndicator {
         String password = properties.getCertificate().getPassword();
 
         if (path == null || path.isBlank()) {
-            return Health.down().withDetail("reason", "NFSE_CERT_PATH not configured").build();
+            return Health.up().withDetail("status", "NOT_CONFIGURED")
+                    .withDetail("reason", "NFSE_CERT_PATH not configured").build();
         }
         if (password == null || password.isBlank()) {
-            return Health.down().withDetail("reason", "NFSE_CERT_PASSWORD not configured").build();
+            return Health.up().withDetail("status", "NOT_CONFIGURED")
+                    .withDetail("reason", "NFSE_CERT_PASSWORD not configured").build();
         }
 
         try (FileInputStream fis = new FileInputStream(path)) {

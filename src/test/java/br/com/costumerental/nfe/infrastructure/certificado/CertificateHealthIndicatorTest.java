@@ -11,24 +11,26 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class CertificateHealthIndicatorTest {
 
     @Test
-    void healthDown_whenCertPathIsBlank() {
+    void healthUp_whenCertPathIsBlank() {
         NfeProperties props = buildProps("", "somePassword");
         CertificateHealthIndicator indicator = new CertificateHealthIndicator(props);
 
         Health health = indicator.health();
 
-        assertEquals(Status.DOWN, health.getStatus());
+        assertEquals(Status.UP, health.getStatus());
+        assertEquals("NOT_CONFIGURED", health.getDetails().get("status"));
         assertEquals("NFSE_CERT_PATH not configured", health.getDetails().get("reason"));
     }
 
     @Test
-    void healthDown_whenCertPasswordIsBlank() {
+    void healthUp_whenCertPasswordIsBlank() {
         NfeProperties props = buildProps("/some/path.pfx", "");
         CertificateHealthIndicator indicator = new CertificateHealthIndicator(props);
 
         Health health = indicator.health();
 
-        assertEquals(Status.DOWN, health.getStatus());
+        assertEquals(Status.UP, health.getStatus());
+        assertEquals("NOT_CONFIGURED", health.getDetails().get("status"));
         assertEquals("NFSE_CERT_PASSWORD not configured", health.getDetails().get("reason"));
     }
 

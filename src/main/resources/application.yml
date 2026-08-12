@@ -17,14 +17,19 @@ spring:
     enabled: false
 
 nfe:
+  security:
+    jwt:
+      secret: ${RENTFIT_JWT_SECRET}
+      issuer: rentafit-api
   emit:
-    cnpj: ${NFE_EMIT_CNPJ}
-    ie: ${NFE_EMIT_IE:}
+    cnpj:
+    ie:
     uf: ${NFE_EMIT_UF:SP}
     razao-social: ${NFE_EMIT_RAZAO_SOCIAL:Emitente Homologacao}
     nome-fantasia: ${NFE_EMIT_NOME_FANTASIA:}
     fone: ${NFE_EMIT_FONE:}
     crt: ${NFE_EMIT_CRT:1}
+    im: ${NFE_EMIT_IM:}
     endereco:
       logradouro: ${NFE_EMIT_LOGRADOURO:Rua Teste}
       numero: ${NFE_EMIT_NUMERO:0}
