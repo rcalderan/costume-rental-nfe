@@ -13,6 +13,7 @@ import br.com.costumerental.nfe.repository.FiscalDocumentXmlRepository;
 import br.com.costumerental.nfe.repository.NfeDocumentTypeRepository;
 import br.com.costumerental.nfe.repository.NfeIssuerRepository;
 import br.com.costumerental.nfe.repository.NfeStatusRepository;
+import br.com.costumerental.nfe.xml.NfeStatusCodeResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,17 +30,20 @@ public class FiscalDocumentService {
     private final NfeDocumentTypeRepository documentTypeRepository;
     private final NfeIssuerRepository issuerRepository;
     private final FiscalDocumentXmlRepository xmlRepository;
+    private final NfeStatusCodeResolver statusCodeResolver;
 
     public FiscalDocumentService(FiscalDocumentRepository repository,
                                  NfeStatusRepository statusRepository,
                                  NfeDocumentTypeRepository documentTypeRepository,
                                  NfeIssuerRepository issuerRepository,
-                                 FiscalDocumentXmlRepository xmlRepository) {
+                                 FiscalDocumentXmlRepository xmlRepository,
+                                 NfeStatusCodeResolver statusCodeResolver) {
         this.repository = repository;
         this.statusRepository = statusRepository;
         this.documentTypeRepository = documentTypeRepository;
         this.issuerRepository = issuerRepository;
         this.xmlRepository = xmlRepository;
+        this.statusCodeResolver = statusCodeResolver;
     }
 
     @Transactional
@@ -66,6 +70,7 @@ public class FiscalDocumentService {
     @Transactional
     public void updateAfterSefaz(FiscalDocument document, NfeEmissionResponse response) {
         document.setStatus(statusEntity(response.getStatus()));
+        statusCodeResolver.upsertSefazStatus(response.getStatusCode(), response.getStatusMessage());
         document.setSefazStatusCode(response.getStatusCode());
         document.setProtocol(response.getProtocol());
         if (response.getAuthorizedXml() != null && !response.getAuthorizedXml().isBlank()) {
@@ -85,6 +90,7 @@ public class FiscalDocumentService {
     public void updateFromConsultation(FiscalDocument document, NfeStatus status, String statusCode,
                                         String protocol, String authorizedXml) {
         document.setStatus(statusEntity(status));
+        statusCodeResolver.upsertSefazStatus(statusCode, null);
         if (statusCode != null) {
             document.setSefazStatusCode(statusCode);
         }

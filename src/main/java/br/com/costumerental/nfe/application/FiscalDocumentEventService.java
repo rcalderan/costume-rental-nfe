@@ -17,6 +17,7 @@ import br.com.costumerental.nfe.repository.FiscalDocumentInutilizationRepository
 import br.com.costumerental.nfe.repository.FiscalEventXmlRepository;
 import br.com.costumerental.nfe.repository.NfeEventTypeRepository;
 import br.com.costumerental.nfe.repository.NfeIssuerRepository;
+import br.com.costumerental.nfe.xml.NfeStatusCodeResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,19 +32,22 @@ public class FiscalDocumentEventService {
     private final NfeEventTypeRepository eventTypeRepository;
     private final FiscalEventXmlRepository eventXmlRepository;
     private final NfeIssuerRepository issuerRepository;
+    private final NfeStatusCodeResolver statusCodeResolver;
 
     public FiscalDocumentEventService(FiscalDocumentEventRepository eventRepository,
                                        FiscalDocumentInutilizationRepository inutilizationRepository,
                                        FiscalDocumentService fiscalDocumentService,
                                        NfeEventTypeRepository eventTypeRepository,
                                        FiscalEventXmlRepository eventXmlRepository,
-                                       NfeIssuerRepository issuerRepository) {
+                                       NfeIssuerRepository issuerRepository,
+                                       NfeStatusCodeResolver statusCodeResolver) {
         this.eventRepository = eventRepository;
         this.inutilizationRepository = inutilizationRepository;
         this.fiscalDocumentService = fiscalDocumentService;
         this.eventTypeRepository = eventTypeRepository;
         this.eventXmlRepository = eventXmlRepository;
         this.issuerRepository = issuerRepository;
+        this.statusCodeResolver = statusCodeResolver;
     }
 
     @Transactional
@@ -64,6 +68,7 @@ public class FiscalDocumentEventService {
         event.setSequence(sequence);
         event.setEventXml(eventXmlEntity);
         event.setResponseXml(responseXmlEntity);
+        statusCodeResolver.upsertSefazStatus(response.getStatusCode(), response.getStatusMessage());
         event.setSefazStatusCode(response.getStatusCode());
         event.setProtocol(response.getProtocol());
         return eventRepository.save(event);
@@ -101,6 +106,7 @@ public class FiscalDocumentEventService {
         inutilization.setFinalNumber(request.getFinalNumber());
         inutilization.setJustification(request.getJustification());
         inutilization.setResponseXml(responseXmlEntity);
+        statusCodeResolver.upsertSefazStatus(response.getStatusCode(), response.getStatusMessage());
         inutilization.setSefazStatusCode(response.getStatusCode());
         inutilization.setProtocol(response.getProtocol());
         return inutilizationRepository.save(inutilization);
