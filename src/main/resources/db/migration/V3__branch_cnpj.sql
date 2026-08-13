@@ -15,17 +15,23 @@ CREATE TABLE empresa (
 
 -- 2. Migra dados existentes de nfe_issuer para empresa (uma empresa por raiz)
 INSERT INTO empresa (root_cnpj, razao_social, crt, pais_codigo, pais_nome, matriz_cnpj, created_at, updated_at)
-SELECT DISTINCT
-    SUBSTRING(cnpj, 1, 8),
+SELECT
+    SUBSTRING(cnpj, 1, 8)                AS root_cnpj,
     razao_social,
     crt,
     pais_codigo,
     pais_nome,
-    MIN(cnpj) OVER (PARTITION BY SUBSTRING(cnpj, 1, 8)),
-    MIN(created_at),
-    NOW()
+    MIN(cnpj)                             AS matriz_cnpj,
+    MIN(created_at)                       AS created_at,
+    NOW()                                 AS updated_at
 FROM nfe_issuer
-WHERE SUBSTRING(cnpj, 9, 4) = '0001';
+WHERE SUBSTRING(cnpj, 9, 4) = '0001'
+GROUP BY
+    SUBSTRING(cnpj, 1, 8),
+    razao_social,
+    crt,
+    pais_codigo,
+    pais_nome;
 
 -- 3. Adiciona colunas decompostas em nfe_issuer
 ALTER TABLE nfe_issuer
