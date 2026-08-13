@@ -32,7 +32,7 @@ public class NfeIssuer {
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "firm_id", nullable = false, unique = true)
     private Firm firm;
 
