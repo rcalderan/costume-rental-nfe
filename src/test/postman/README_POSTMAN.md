@@ -55,7 +55,7 @@ A aplicação sobe em `http://localhost:8081`. Swagger disponível em `/swagger-
 
 ### 4. Testar os Endpoints
 
-A collection usa **Bearer Token** herdado a nível de collection. Em ambiente local sem Nginx gateway, a API aceita requests sem token — basta deixar a variável `token` vazia no environment. Em **HK/produção**, o gateway Nginx valida o JWT antes de rotear para o NFe, então é necessário:
+A collection usa **Bearer Token** herdado a nível de collection. Em ambiente local sem Caddy gateway, a API aceita requests sem token — basta deixar a variável `token` vazia no environment. Em **HK/produção**, o gateway Caddy repassa o header `Authorization` e o serviço NFe valida o JWT, então é necessário:
 
 1. Fazer login no Rentafit: `POST http://<host>/api/auth/login` com `{ "username": "...", "password": "..." }`
 2. Copiar o `accessToken` da resposta
@@ -84,7 +84,7 @@ A collection usa **Bearer Token** herdado a nível de collection. Em ambiente lo
 | `query_document` | CPF/CNPJ usado em consultas cadastrais e DFe | `52998224725` |
 | `nsu_or_key` | NSU ou chave de acesso para distribuição DFe | `000000000000000` |
 | `query_type` | Tipo de consulta DFe (`NSU`, `NSU_UNICO`, `CHAVE`) | `NSU` |
-| `token` | JWT Bearer token do Rentafit (obrigatório em HK/prod via Nginx; vazio em local) | `eyJhbGciOi...` |
+| `token` | JWT Bearer token do Rentafit (obrigatório em HK/prod via Caddy; vazio em local) | `eyJhbGciOi...` |
 
 ## 🔄 Massas de Teste
 
@@ -110,14 +110,12 @@ A collection usa **Bearer Token** herdado a nível de collection. Em ambiente lo
 
 > **Observação:** como a emissão é feita em modo síncrono (`indSinc=1`), a SEFAZ normalmente retorna o protocolo direto na emissão, sem gerar `receiptNumber`. O endpoint de consulta de recibo é mantido para cenários de contingência/processamento assíncrono.
 
-## 🔐 Autenticação (Fase 5 — Nginx Gateway)
+## 🔐 Autenticação (Fase 5 — Caddy Gateway)
 
-Em ambiente local, a API **não exige autenticação** — o NFe não possui Spring Security. Em HK/produção, o tráfego passa pelo **Nginx gateway** que valida o JWT do Rentafit via `auth_request` antes de rotear para o NFe:
+Em ambiente local, a API **não exige autenticação** — o NFe não possui Spring Security. Em HK/produção, o tráfego passa pelo **Caddy gateway** que repassa o header `Authorization` para o NFe; a validação do JWT é feita pelo próprio serviço NFe.
 
 ```
-Frontend/Postman → :80 (Nginx) → auth_request → Rentafit /api/auth/validate-token → 200/401
-                                  ↓ (se 200)
-                              proxy_pass → NFe :8081
+Frontend/Postman → :80 (Caddy) → proxy_pass → NFe :8081
 ```
 
 Para testar via Postman em HK:
