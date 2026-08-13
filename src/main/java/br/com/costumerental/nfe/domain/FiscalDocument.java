@@ -6,12 +6,13 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
@@ -31,25 +32,32 @@ public class FiscalDocument {
     @Column(nullable = false, unique = true, length = 44)
     private String accessKey;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    private FiscalDocumentType documentType;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "issuer_id", nullable = false)
+    private NfeIssuer issuer;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private NfeStatus status;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "document_type_id", nullable = false)
+    private NfeDocumentTypeEntity documentType;
 
-    @Lob
-    private String signedXml;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "status_id", nullable = false)
+    private NfeStatusEntity status;
 
-    @Lob
-    private String authorizedXml;
+    @Column(name = "sefaz_status_code", length = 3)
+    private String sefazStatusCode;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "signed_xml_id")
+    private FiscalDocumentXml signedXml;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "authorized_xml_id")
+    private FiscalDocumentXml authorizedXml;
 
     private LocalDateTime issueDate;
 
     private String protocol;
-
-    private String rejectionReason;
 
     private String originId;
 

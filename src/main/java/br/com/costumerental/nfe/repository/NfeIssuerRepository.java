@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface NfeIssuerRepository extends JpaRepository<NfeIssuer, String> {
+public interface NfeIssuerRepository extends JpaRepository<NfeIssuer, Long> {
     Optional<NfeIssuer> findFirstByActiveTrue();
+    Optional<NfeIssuer> findByCnpj(String cnpj);
 }

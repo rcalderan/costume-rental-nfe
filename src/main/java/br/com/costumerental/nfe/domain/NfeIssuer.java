@@ -6,6 +6,8 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
@@ -20,7 +22,10 @@ import java.time.LocalDateTime;
 public class NfeIssuer {
 
     @Id
-    @Column(nullable = false, length = 14)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true, length = 14)
     private String cnpj;
 
     @Column(nullable = false, length = 255)
