@@ -4,7 +4,7 @@ import br.com.costumerental.nfe.api.dto.NfeEventResponse;
 import br.com.costumerental.nfe.api.dto.NfeInutilizacaoRequest;
 import br.com.costumerental.nfe.api.dto.NfeInutilizacaoResponse;
 import br.com.costumerental.nfe.domain.Cnpj;
-import br.com.costumerental.nfe.domain.Empresa;
+import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.FiscalDocument;
 import br.com.costumerental.nfe.domain.FiscalDocumentEvent;
 import br.com.costumerental.nfe.domain.FiscalDocumentInutilization;
@@ -78,18 +78,17 @@ class FiscalDocumentEventServiceTest {
 
     @Test
     void saveInutilization_shouldUpsertUnknownStatusCodeBeforeSaving() {
-        Empresa empresa = new Empresa();
-        empresa.setRootCnpj("08299621");
-        empresa.setRazaoSocial("Emitente");
-        empresa.setCrt("1");
-        empresa.setPaisCodigo("1058");
-        empresa.setPaisNome("BRASIL");
+        Firm firm = new Firm();
+        firm.setRootCnpj("08299621");
+        firm.setBranchOrder("0001");
+        firm.setDigit("20");
+        firm.setRazaoSocial("Emitente");
+        firm.setCrt("1");
+        firm.setPaisCodigo("1058");
+        firm.setPaisNome("BRASIL");
         NfeIssuer issuer = new NfeIssuer();
-        issuer.setId(1L);
-        issuer.setEmpresa(empresa);
-        issuer.setBranchOrder("0001");
-        issuer.setDigitoControle("20");
-        when(issuerRepository.findByEmpresaRootCnpjAndBranchOrder("08299621", "0001")).thenReturn(Optional.of(issuer));
+        issuer.setFirm(firm);
+        when(issuerRepository.findByFirmRootCnpjAndFirmBranchOrder("08299621", "0001")).thenReturn(Optional.of(issuer));
         when(inutilizationRepository.save(any())).thenReturn(new FiscalDocumentInutilization());
 
         NfeInutilizacaoRequest request = NfeInutilizacaoRequest.builder()

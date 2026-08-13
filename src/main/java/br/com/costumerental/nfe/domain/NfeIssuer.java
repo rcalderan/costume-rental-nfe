@@ -6,16 +6,19 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -25,18 +28,13 @@ import java.time.LocalDateTime;
 public class NfeIssuer {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(updatable = false, nullable = false)
+    private UUID id;
 
-    @ManyToOne
-    @JoinColumn(name = "empresa_root", nullable = false)
-    private Empresa empresa;
-
-    @Column(nullable = false, length = 4)
-    private String branchOrder;
-
-    @Column(nullable = false, length = 2)
-    private String digitoControle;
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "firm_id", nullable = false, unique = true)
+    private Firm firm;
 
     @Column(length = 255)
     private String nomeFantasia;
@@ -103,31 +101,46 @@ public class NfeIssuer {
 
     @Transient
     public String getCnpj() {
-        return empresa.getRootCnpj() + branchOrder + digitoControle;
+        return firm.getCnpj();
+    }
+
+    @Transient
+    public String getRootCnpj() {
+        return firm.getRootCnpj();
+    }
+
+    @Transient
+    public String getBranchOrder() {
+        return firm.getBranchOrder();
+    }
+
+    @Transient
+    public String getDigitoControle() {
+        return firm.getDigit();
     }
 
     @Transient
     public String getRazaoSocial() {
-        return empresa.getRazaoSocial();
+        return firm.getRazaoSocial();
     }
 
     @Transient
     public String getCrt() {
-        return empresa.getCrt();
+        return firm.getCrt();
     }
 
     @Transient
     public String getPaisCodigo() {
-        return empresa.getPaisCodigo();
+        return firm.getPaisCodigo();
     }
 
     @Transient
     public String getPaisNome() {
-        return empresa.getPaisNome();
+        return firm.getPaisNome();
     }
 
     @Transient
     public boolean isMatriz() {
-        return "0001".equals(branchOrder);
+        return firm.isMatriz();
     }
 }

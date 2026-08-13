@@ -6,22 +6,35 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "empresa")
-public class Empresa {
+@Table(name = "firm")
+public class Firm {
 
     @Id
-    @Column(length = 8, nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(updatable = false, nullable = false)
+    private UUID id;
+
+    @Column(nullable = false, length = 8)
     private String rootCnpj;
+
+    @Column(nullable = false, length = 4)
+    private String branchOrder;
+
+    @Column(nullable = false, length = 2)
+    private String digit;
 
     @Column(nullable = false, length = 255)
     private String razaoSocial;
@@ -54,5 +67,13 @@ public class Empresa {
     @PreUpdate
     void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public String getCnpj() {
+        return rootCnpj + branchOrder + digit;
+    }
+
+    public boolean isMatriz() {
+        return "0001".equals(branchOrder);
     }
 }

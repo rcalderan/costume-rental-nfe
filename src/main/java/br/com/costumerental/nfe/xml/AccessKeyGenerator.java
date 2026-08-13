@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
+import java.util.UUID;
 
 @Component
 public class AccessKeyGenerator {
@@ -61,7 +62,7 @@ public class AccessKeyGenerator {
         return leftPad(String.valueOf(RANDOM.nextInt(99999999)), 8, '0');
     }
 
-    public String generateInvoiceNumber(Long issuerId, String series) {
+    public String generateInvoiceNumber(UUID issuerId, String series) {
         if (numberControlService != null && issuerId != null) {
             return numberControlService.reserveNextNumber(issuerId, series);
         }

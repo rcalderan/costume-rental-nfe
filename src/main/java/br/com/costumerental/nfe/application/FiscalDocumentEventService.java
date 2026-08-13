@@ -89,7 +89,7 @@ public class FiscalDocumentEventService {
     @Transactional
     public FiscalDocumentInutilization saveInutilization(String eventXml, NfeInutilizacaoRequest request,
                                                           NfeInutilizacaoResponse response) {
-        NfeIssuer issuer = issuerRepository.findByEmpresaRootCnpjAndBranchOrder(
+        NfeIssuer issuer = issuerRepository.findByFirmRootCnpjAndFirmBranchOrder(
                         Cnpj.parse(request.getCnpj()).root(),
                         Cnpj.parse(request.getCnpj()).branch())
                 .orElseThrow(() -> new IllegalStateException("Emitente nao encontrado para CNPJ: " + request.getCnpj()));

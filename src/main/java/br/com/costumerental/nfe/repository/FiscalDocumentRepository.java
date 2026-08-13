@@ -5,10 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface FiscalDocumentRepository extends JpaRepository<FiscalDocument, Long> {
 
     Optional<FiscalDocument> findByAccessKey(String accessKey);
 
-    List<FiscalDocument> findByIssuerIdAndStatusId(Long issuerId, Short statusId);
+    List<FiscalDocument> findByIssuerIdAndStatusId(UUID issuerId, Short statusId);
 }

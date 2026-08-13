@@ -5,6 +5,8 @@ import br.com.costumerental.nfe.repository.FiscalDocumentNumberControlRepository
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 public class FiscalDocumentNumberControlService {
 
@@ -15,7 +17,7 @@ public class FiscalDocumentNumberControlService {
     }
 
     @Transactional
-    public String reserveNextNumber(Long issuerId, String series) {
+    public String reserveNextNumber(UUID issuerId, String series) {
         FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(issuerId, series);
         FiscalDocumentNumberControl control = repository.findById(pk)
                 .orElseGet(() -> {

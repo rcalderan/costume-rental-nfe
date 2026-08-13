@@ -11,6 +11,7 @@ import javax.persistence.IdClass;
 import javax.persistence.Table;
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -22,7 +23,7 @@ public class FiscalDocumentNumberControl {
 
     @Id
     @Column(name = "issuer_id", nullable = false)
-    private Long issuerId;
+    private UUID issuerId;
 
     @Id
     @Column(name = "series", nullable = false, length = 3)
@@ -31,7 +32,7 @@ public class FiscalDocumentNumberControl {
     @Column(name = "last_number", nullable = false)
     private Long lastNumber;
 
-    public FiscalDocumentNumberControl(Long issuerId, String series, Long lastNumber) {
+    public FiscalDocumentNumberControl(UUID issuerId, String series, Long lastNumber) {
         this.issuerId = issuerId;
         this.series = series;
         this.lastNumber = lastNumber;
@@ -41,10 +42,10 @@ public class FiscalDocumentNumberControl {
     @Setter
     @NoArgsConstructor
     public static class PK implements Serializable {
-        private Long issuerId;
+        private UUID issuerId;
         private String series;
 
-        public PK(Long issuerId, String series) {
+        public PK(UUID issuerId, String series) {
             this.issuerId = issuerId;
             this.series = series;
         }

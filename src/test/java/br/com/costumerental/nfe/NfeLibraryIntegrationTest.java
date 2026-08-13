@@ -5,7 +5,7 @@ import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
 import br.com.costumerental.nfe.application.FiscalDocumentNumberControlService;
 import br.com.costumerental.nfe.config.NfeProperties;
-import br.com.costumerental.nfe.domain.Empresa;
+import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeConfigFactory;
@@ -67,17 +67,16 @@ class NfeLibraryIntegrationTest {
     }
 
     private NfeIssuer buildIssuer() {
-        Empresa empresa = new Empresa();
-        empresa.setRootCnpj("08299621");
-        empresa.setRazaoSocial("Emitente Teste");
-        empresa.setCrt("1");
-        empresa.setPaisCodigo("1058");
-        empresa.setPaisNome("BRASIL");
+        Firm firm = new Firm();
+        firm.setRootCnpj("08299621");
+        firm.setBranchOrder("0001");
+        firm.setDigit("20");
+        firm.setRazaoSocial("Emitente Teste");
+        firm.setCrt("1");
+        firm.setPaisCodigo("1058");
+        firm.setPaisNome("BRASIL");
         NfeIssuer iss = new NfeIssuer();
-        iss.setId(1L);
-        iss.setEmpresa(empresa);
-        iss.setBranchOrder("0001");
-        iss.setDigitoControle("20");
+        iss.setFirm(firm);
         iss.setIe("111111111111");
         iss.setLogradouro("Rua Teste");
         iss.setNumero("0");

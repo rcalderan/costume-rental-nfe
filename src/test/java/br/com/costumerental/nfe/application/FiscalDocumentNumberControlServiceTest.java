@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,12 +32,13 @@ class FiscalDocumentNumberControlServiceTest {
 
     @Test
     void shouldCreateControlWhenNotExistsAndReturnFirstNumber() {
-        FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(1L, "1");
+        UUID issuerId = UUID.randomUUID();
+        FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(issuerId, "1");
         when(repository.findById(pk)).thenReturn(Optional.empty());
         when(repository.save(any(FiscalDocumentNumberControl.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        String number = service.reserveNextNumber(1L, "1");
+        String number = service.reserveNextNumber(issuerId, "1");
 
         assertThat(number).isEqualTo("1");
         verify(repository, times(2)).save(any(FiscalDocumentNumberControl.class));
@@ -44,13 +46,14 @@ class FiscalDocumentNumberControlServiceTest {
 
     @Test
     void shouldIncrementExistingControlAndReturnNextNumber() {
-        FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(1L, "1");
-        FiscalDocumentNumberControl existing = new FiscalDocumentNumberControl(1L, "1", 5L);
+        UUID issuerId = UUID.randomUUID();
+        FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(issuerId, "1");
+        FiscalDocumentNumberControl existing = new FiscalDocumentNumberControl(issuerId, "1", 5L);
         when(repository.findById(pk)).thenReturn(Optional.of(existing));
         when(repository.save(any(FiscalDocumentNumberControl.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        String number = service.reserveNextNumber(1L, "1");
+        String number = service.reserveNextNumber(issuerId, "1");
 
         assertThat(number).isEqualTo("6");
         assertThat(existing.getLastNumber()).isEqualTo(6L);
@@ -58,14 +61,15 @@ class FiscalDocumentNumberControlServiceTest {
 
     @Test
     void shouldReturnSequentialNumbersAcrossCalls() {
-        FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(2L, "001");
-        FiscalDocumentNumberControl existing = new FiscalDocumentNumberControl(2L, "001", 99L);
+        UUID issuerId = UUID.randomUUID();
+        FiscalDocumentNumberControl.PK pk = new FiscalDocumentNumberControl.PK(issuerId, "001");
+        FiscalDocumentNumberControl existing = new FiscalDocumentNumberControl(issuerId, "001", 99L);
         when(repository.findById(pk)).thenReturn(Optional.of(existing));
         when(repository.save(any(FiscalDocumentNumberControl.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        String first = service.reserveNextNumber(2L, "001");
-        String second = service.reserveNextNumber(2L, "001");
+        String first = service.reserveNextNumber(issuerId, "001");
+        String second = service.reserveNextNumber(issuerId, "001");
 
         assertThat(first).isEqualTo("100");
         assertThat(second).isEqualTo("101");

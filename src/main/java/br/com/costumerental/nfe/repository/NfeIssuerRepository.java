@@ -6,12 +6,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface NfeIssuerRepository extends JpaRepository<NfeIssuer, Long> {
-    Optional<NfeIssuer> findByEmpresaRootCnpjAndBranchOrder(String empresaRootCnpj, String branchOrder);
-    List<NfeIssuer> findByEmpresaRootCnpj(String empresaRootCnpj);
-    Optional<NfeIssuer> findFirstByEmpresaRootCnpjAndBranchOrderAndActiveTrue(String empresaRootCnpj, String branchOrder);
-    Optional<NfeIssuer> findFirstByActiveTrueOrderByBranchOrderAsc();
-    List<NfeIssuer> findByActiveTrueOrderByBranchOrderAsc();
+public interface NfeIssuerRepository extends JpaRepository<NfeIssuer, UUID> {
+    Optional<NfeIssuer> findByFirmRootCnpjAndFirmBranchOrder(String rootCnpj, String branchOrder);
+    List<NfeIssuer> findByFirmRootCnpj(String rootCnpj);
+    Optional<NfeIssuer> findFirstByFirmRootCnpjAndFirmBranchOrderAndActiveTrue(String rootCnpj, String branchOrder);
+    Optional<NfeIssuer> findFirstByActiveTrueOrderByFirmBranchOrderAsc();
+    List<NfeIssuer> findByActiveTrueOrderByFirmBranchOrderAsc();
 }

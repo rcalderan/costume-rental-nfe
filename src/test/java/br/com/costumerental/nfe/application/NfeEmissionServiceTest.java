@@ -1,7 +1,7 @@
 package br.com.costumerental.nfe.application;
 
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
-import br.com.costumerental.nfe.domain.Empresa;
+import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.FiscalDocument;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.exception.NfeBusinessException;
@@ -61,17 +61,16 @@ class NfeEmissionServiceTest {
     }
 
     private NfeIssuer buildIssuer(String cnpj14) {
-        Empresa empresa = new Empresa();
-        empresa.setRootCnpj(cnpj14.substring(0, 8));
-        empresa.setRazaoSocial("Emitente Teste");
-        empresa.setCrt("1");
-        empresa.setPaisCodigo("1058");
-        empresa.setPaisNome("BRASIL");
+        Firm firm = new Firm();
+        firm.setRootCnpj(cnpj14.substring(0, 8));
+        firm.setBranchOrder(cnpj14.substring(8, 12));
+        firm.setDigit(cnpj14.substring(12, 14));
+        firm.setRazaoSocial("Emitente Teste");
+        firm.setCrt("1");
+        firm.setPaisCodigo("1058");
+        firm.setPaisNome("BRASIL");
         NfeIssuer iss = new NfeIssuer();
-        iss.setId(1L);
-        iss.setEmpresa(empresa);
-        iss.setBranchOrder(cnpj14.substring(8, 12));
-        iss.setDigitoControle(cnpj14.substring(12, 14));
+        iss.setFirm(firm);
         iss.setUf("SP");
         iss.setActive(true);
         return iss;

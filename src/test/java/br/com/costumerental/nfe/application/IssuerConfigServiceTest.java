@@ -1,11 +1,11 @@
 package br.com.costumerental.nfe.application;
 
 import br.com.costumerental.nfe.config.NfeProperties;
-import br.com.costumerental.nfe.domain.Empresa;
+import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateEncryption;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
-import br.com.costumerental.nfe.repository.EmpresaRepository;
+import br.com.costumerental.nfe.repository.FirmRepository;
 import br.com.costumerental.nfe.repository.NfeIssuerRepository;
 import br.com.swconsultoria.certificado.exception.CertificadoException;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +28,7 @@ class IssuerConfigServiceTest {
     @Mock
     private NfeIssuerRepository issuerRepository;
     @Mock
-    private EmpresaRepository empresaRepository;
+    private FirmRepository firmRepository;
     @Mock
     private CertificateEncryption certificateEncryption;
     @Mock
@@ -40,7 +40,7 @@ class IssuerConfigServiceTest {
     @BeforeEach
     void setUp() {
         properties = buildProperties();
-        service = new IssuerConfigService(issuerRepository, empresaRepository,
+        service = new IssuerConfigService(issuerRepository, firmRepository,
                 certificateEncryption, certificateLoader, properties);
     }
 
@@ -69,7 +69,7 @@ class IssuerConfigServiceTest {
     void shouldLoadActiveIssuerAndUpdateProperties() {
         NfeIssuer issuer = buildIssuer("08299621000120");
         issuer.setEncryptedPassword("encrypted");
-        when(issuerRepository.findFirstByActiveTrueOrderByBranchOrderAsc()).thenReturn(Optional.of(issuer));
+        when(issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()).thenReturn(Optional.of(issuer));
         when(certificateEncryption.decrypt("encrypted")).thenReturn("decrypted-password");
 
         service.loadDefaultIssuer();
@@ -81,9 +81,9 @@ class IssuerConfigServiceTest {
 
     @Test
     void shouldSeedIssuerFromPropertiesWhenNoActiveIssuerExists() {
-        when(issuerRepository.findFirstByActiveTrueOrderByBranchOrderAsc()).thenReturn(Optional.empty());
-        when(empresaRepository.findById("08299621")).thenReturn(Optional.empty());
-        when(empresaRepository.save(any(Empresa.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()).thenReturn(Optional.empty());
+        when(firmRepository.findByRootCnpjAndBranchOrder("08299621", "0001")).thenReturn(Optional.empty());
+        when(firmRepository.save(any(Firm.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(certificateEncryption.encrypt("password123")).thenReturn("encrypted");
         when(certificateEncryption.decrypt("encrypted")).thenReturn("password123");
         when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -97,7 +97,7 @@ class IssuerConfigServiceTest {
     @Test
     void shouldLeavePropertiesEmptyWhenNoActiveIssuerAndNoCnpjConfigured() {
         properties.getEmit().setCnpj("");
-        when(issuerRepository.findFirstByActiveTrueOrderByBranchOrderAsc()).thenReturn(Optional.empty());
+        when(issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()).thenReturn(Optional.empty());
 
         service.loadDefaultIssuer();
 
@@ -121,9 +121,10 @@ class IssuerConfigServiceTest {
 
     @Test
     void shouldConfigureIssuerFromRequest() {
-        when(empresaRepository.findById("08299621")).thenReturn(Optional.empty());
-        when(empresaRepository.save(any(Empresa.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(issuerRepository.findByEmpresaRootCnpjAndBranchOrder("08299621", "0001"))
+        when(firmRepository.findByRootCnpjAndBranchOrder("08299621", "0001"))
+                .thenReturn(Optional.empty());
+        when(firmRepository.save(any(Firm.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(issuerRepository.findByFirmRootCnpjAndFirmBranchOrder("08299621", "0001"))
                 .thenReturn(Optional.empty());
         when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -170,7 +171,7 @@ class IssuerConfigServiceTest {
 
     @Test
     void shouldRejectBranchWithoutMatrizCadastrada() {
-        when(empresaRepository.findById("08299621")).thenReturn(Optional.empty());
+        when(firmRepository.findByRootCnpjAndBranchOrder("08299621", "0001")).thenReturn(Optional.empty());
         IssuerBranchSetupRequest request = new IssuerBranchSetupRequest(
                 "08299621000200", "Filial SP", null, null, null,
                 "Rua Teste", "0", "Centro", "3548906", "Sao Carlos", "SP", "13560000",
@@ -184,7 +185,7 @@ class IssuerConfigServiceTest {
     @Test
     void shouldActivateCertificateAndPersistIssuer() throws CertificadoException {
         NfeIssuer issuer = buildIssuer("08299621000120");
-        when(issuerRepository.findFirstByActiveTrueOrderByBranchOrderAsc()).thenReturn(Optional.of(issuer));
+        when(issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()).thenReturn(Optional.of(issuer));
         when(certificateLoader.load("/certs/new.pfx", "new-pass")).thenReturn(null);
         when(certificateEncryption.encrypt("new-pass")).thenReturn("new-encrypted");
         when(certificateEncryption.decrypt("new-encrypted")).thenReturn("new-pass");
@@ -202,16 +203,16 @@ class IssuerConfigServiceTest {
         String root = cnpj14.substring(0, 8);
         String branch = cnpj14.substring(8, 12);
         String dv = cnpj14.substring(12, 14);
-        Empresa empresa = new Empresa();
-        empresa.setRootCnpj(root);
-        empresa.setRazaoSocial("Emitente Teste");
-        empresa.setCrt("1");
-        empresa.setPaisCodigo("1058");
-        empresa.setPaisNome("BRASIL");
+        Firm firm = new Firm();
+        firm.setRootCnpj(root);
+        firm.setBranchOrder(branch);
+        firm.setDigit(dv);
+        firm.setRazaoSocial("Emitente Teste");
+        firm.setCrt("1");
+        firm.setPaisCodigo("1058");
+        firm.setPaisNome("BRASIL");
         NfeIssuer issuer = new NfeIssuer();
-        issuer.setEmpresa(empresa);
-        issuer.setBranchOrder(branch);
-        issuer.setDigitoControle(dv);
+        issuer.setFirm(firm);
         issuer.setIe("637287665118");
         issuer.setIm("123456789");
         issuer.setFone("16333722363");

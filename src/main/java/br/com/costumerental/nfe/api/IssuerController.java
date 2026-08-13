@@ -41,7 +41,7 @@ public class IssuerController {
     @Operation(summary = "Listar filiais", description = "Lista matriz e filiais do mesmo CNPJ raiz do emitente ativo")
     public ResponseEntity<List<IssuerResponse>> listBranches() {
         return issuerConfigService.findCurrentIssuer()
-                .map(current -> issuerConfigService.findBranchesOf(current.getEmpresa().getRootCnpj()))
+                .map(current -> issuerConfigService.findBranchesOf(current.getRootCnpj()))
                 .map(issuers -> issuers.stream().map(this::toResponse).toList())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -64,7 +64,7 @@ public class IssuerController {
     private IssuerResponse toResponse(NfeIssuer issuer) {
         return IssuerResponse.builder()
                 .cnpj(issuer.getCnpj())
-                .rootCnpj(issuer.getEmpresa().getRootCnpj())
+                .rootCnpj(issuer.getRootCnpj())
                 .branchOrder(issuer.getBranchOrder())
                 .digitoControle(issuer.getDigitoControle())
                 .matriz(issuer.isMatriz())
