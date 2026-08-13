@@ -33,6 +33,7 @@ public record IssuerSetupRequest(
         String bairro,
 
         @NotBlank(message = "Código do município é obrigatório")
+        @Pattern(regexp = "^\\d{7}$", message = "Código do município deve conter 7 dígitos numéricos (IBGE)")
         String municipioCodigo,
 
         @NotBlank(message = "Nome do município é obrigatório")
@@ -47,6 +48,7 @@ public record IssuerSetupRequest(
         String cep,
 
         @NotBlank(message = "Código do país é obrigatório")
+        @Pattern(regexp = "^\\d{4}$", message = "Código do país deve conter 4 dígitos numéricos (ex: 1058)")
         String paisCodigo,
 
         @NotBlank(message = "Nome do país é obrigatório")
