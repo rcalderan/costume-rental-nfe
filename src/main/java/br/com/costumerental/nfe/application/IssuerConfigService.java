@@ -70,6 +70,11 @@ public class IssuerConfigService {
 
     public NfeIssuer configureIssuer(IssuerSetupRequest request) {
         Cnpj cnpj = Cnpj.parse(request.cnpj());
+        if (!cnpj.isDvValido()) {
+            throw new IllegalArgumentException(
+                    "Digitos de controle do CNPJ invalidos. Esperado: "
+                            + Cnpj.calcularDv(cnpj.root(), cnpj.branch()) + ", recebido: " + cnpj.dv());
+        }
         Empresa empresa = empresaRepository.findById(cnpj.root())
                 .orElseGet(() -> new Empresa());
         empresa.setRootCnpj(cnpj.root());

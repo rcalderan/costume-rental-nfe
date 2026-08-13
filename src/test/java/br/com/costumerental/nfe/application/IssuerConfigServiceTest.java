@@ -105,6 +105,21 @@ class IssuerConfigServiceTest {
     }
 
     @Test
+    void shouldRejectMatrixWithInvalidCheckDigits() {
+        IssuerSetupRequest request = new IssuerSetupRequest(
+                "08299621000112",
+                "NOIVA MODAS E ACESSORIOS LTDA",
+                null, null, null,
+                "1", null,
+                "Rua Teste", "0", "Centro", "3548906", "Sao Carlos", "SP", "13560000",
+                "1058", "BRASIL"
+        );
+        assertThatThrownBy(() -> service.configureIssuer(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Digitos de controle do CNPJ invalidos");
+    }
+
+    @Test
     void shouldConfigureIssuerFromRequest() {
         when(empresaRepository.findById("08299621")).thenReturn(Optional.empty());
         when(empresaRepository.save(any(Empresa.class))).thenAnswer(invocation -> invocation.getArgument(0));
