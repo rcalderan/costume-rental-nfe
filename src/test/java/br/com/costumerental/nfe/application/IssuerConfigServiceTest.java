@@ -102,7 +102,7 @@ class IssuerConfigServiceTest {
 
     @Test
     void shouldConfigureIssuerFromRequest() {
-        when(issuerRepository.findById("08299621000120")).thenReturn(Optional.empty());
+        when(issuerRepository.findByCnpj("08299621000120")).thenReturn(Optional.empty());
         when(issuerRepository.findAll()).thenReturn(java.util.List.of());
         when(issuerRepository.save(any(NfeIssuer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

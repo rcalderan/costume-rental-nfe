@@ -2,16 +2,30 @@ package br.com.costumerental.nfe.xml;
 
 import br.com.costumerental.nfe.api.dto.NfeEmissionResponse;
 import br.com.costumerental.nfe.domain.NfeStatus;
+import br.com.costumerental.nfe.repository.SefazStatusRepository;
 import br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TRetConsReciNFe;
 import br.com.swconsultoria.nfe.schema_4.retConsSitNFe.TProtNFe;
 import br.com.swconsultoria.nfe.schema_4.retConsSitNFe.TRetConsSitNFe;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(MockitoExtension.class)
 class NfeConsultaResponseMapperTest {
 
-    private final NfeConsultaResponseMapper mapper = new NfeConsultaResponseMapper(new NfeStatusCodeResolver());
+    @Mock
+    private SefazStatusRepository sefazStatusRepository;
+
+    private NfeConsultaResponseMapper mapper;
+
+    @BeforeEach
+    void setUp() {
+        mapper = new NfeConsultaResponseMapper(new NfeStatusCodeResolver(sefazStatusRepository));
+    }
 
     @Test
     void shouldMapAuthorizedSituacao() {

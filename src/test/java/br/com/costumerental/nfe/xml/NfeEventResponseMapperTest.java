@@ -6,6 +6,7 @@ import br.com.costumerental.nfe.api.dto.NfeEventResponse;
 import br.com.costumerental.nfe.api.dto.NfeInutilizacaoResponse;
 import br.com.costumerental.nfe.domain.NfeEventType;
 import br.com.costumerental.nfe.domain.NfeStatus;
+import br.com.costumerental.nfe.repository.SefazStatusRepository;
 import br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEvento;
 import br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEnvEvento;
 import br.com.swconsultoria.nfe.schema.retConsCad.TRetConsCad;
@@ -13,7 +14,11 @@ import br.com.swconsultoria.nfe.schema.retConsCad.TRetConsCad.InfCons.InfCad;
 import br.com.swconsultoria.nfe.schema.retConsCad.TUfCons;
 import br.com.swconsultoria.nfe.schema.retdistdfeint.RetDistDFeInt;
 import br.com.swconsultoria.nfe.schema_4.inutNFe.TRetInutNFe;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.xml.datatype.DatatypeFactory;
 import java.util.GregorianCalendar;
@@ -21,9 +26,18 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ExtendWith(MockitoExtension.class)
 class NfeEventResponseMapperTest {
 
-    private final NfeEventResponseMapper mapper = new NfeEventResponseMapper(new NfeStatusCodeResolver());
+    @Mock
+    private SefazStatusRepository sefazStatusRepository;
+
+    private NfeEventResponseMapper mapper;
+
+    @BeforeEach
+    void setUp() {
+        mapper = new NfeEventResponseMapper(new NfeStatusCodeResolver(sefazStatusRepository));
+    }
 
     @Test
     void shouldMapCancelamentoEventoAutorizado() {

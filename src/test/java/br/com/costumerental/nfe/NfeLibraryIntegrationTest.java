@@ -3,6 +3,7 @@ package br.com.costumerental.nfe;
 import br.com.costumerental.nfe.api.dto.CustomerInfo;
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
+import br.com.costumerental.nfe.application.FiscalDocumentNumberControlService;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeConfigFactory;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -25,10 +27,14 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = {NfeProperties.class, CertificateLoader.class, NfeConfigFactory.class,
-        NfeXmlAssembler.class, AccessKeyGenerator.class, IbgeCityCodeResolver.class, NfeLibraryAdapter.class})
+        NfeXmlAssembler.class, AccessKeyGenerator.class, IbgeCityCodeResolver.class, NfeLibraryAdapter.class,
+        FiscalDocumentNumberControlService.class})
 @EnableConfigurationProperties
 @ActiveProfiles("test")
 class NfeLibraryIntegrationTest {
+
+    @MockBean
+    private FiscalDocumentNumberControlService numberControlService;
 
     @Autowired
     private NfeProperties properties;

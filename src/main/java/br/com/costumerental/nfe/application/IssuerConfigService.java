@@ -51,7 +51,7 @@ public class IssuerConfigService {
     }
 
     public NfeIssuer configureIssuer(IssuerSetupRequest request) {
-        NfeIssuer issuer = issuerRepository.findById(request.cnpj())
+        NfeIssuer issuer = issuerRepository.findByCnpj(request.cnpj())
                 .orElse(new NfeIssuer());
         issuer.setCnpj(request.cnpj());
         issuer.setRazaoSocial(request.razaoSocial());

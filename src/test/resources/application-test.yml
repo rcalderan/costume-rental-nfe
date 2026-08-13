@@ -4,6 +4,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: embedded
+      data-locations: classpath:data-test.sql
 
 CERT_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
 
