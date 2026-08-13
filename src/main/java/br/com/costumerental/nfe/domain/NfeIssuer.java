@@ -9,9 +9,12 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import java.time.LocalDateTime;
 
 @Getter
@@ -25,11 +28,15 @@ public class NfeIssuer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 14)
-    private String cnpj;
+    @ManyToOne
+    @JoinColumn(name = "empresa_root", nullable = false)
+    private Empresa empresa;
 
-    @Column(nullable = false, length = 255)
-    private String razaoSocial;
+    @Column(nullable = false, length = 4)
+    private String branchOrder;
+
+    @Column(nullable = false, length = 2)
+    private String digitoControle;
 
     @Column(length = 255)
     private String nomeFantasia;
@@ -39,9 +46,6 @@ public class NfeIssuer {
 
     @Column(length = 20)
     private String im;
-
-    @Column(nullable = false, length = 1)
-    private String crt;
 
     @Column(length = 20)
     private String fone;
@@ -66,12 +70,6 @@ public class NfeIssuer {
 
     @Column(nullable = false, length = 8)
     private String cep;
-
-    @Column(nullable = false, length = 255)
-    private String paisCodigo;
-
-    @Column(nullable = false, length = 255)
-    private String paisNome;
 
     @Column(length = 500)
     private String certificatePath;
@@ -101,5 +99,35 @@ public class NfeIssuer {
     @PreUpdate
     void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @Transient
+    public String getCnpj() {
+        return empresa.getRootCnpj() + branchOrder + digitoControle;
+    }
+
+    @Transient
+    public String getRazaoSocial() {
+        return empresa.getRazaoSocial();
+    }
+
+    @Transient
+    public String getCrt() {
+        return empresa.getCrt();
+    }
+
+    @Transient
+    public String getPaisCodigo() {
+        return empresa.getPaisCodigo();
+    }
+
+    @Transient
+    public String getPaisNome() {
+        return empresa.getPaisNome();
+    }
+
+    @Transient
+    public boolean isMatriz() {
+        return "0001".equals(branchOrder);
     }
 }

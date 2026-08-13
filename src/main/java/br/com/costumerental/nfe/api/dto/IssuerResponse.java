@@ -5,6 +5,10 @@ import lombok.Builder;
 @Builder
 public record IssuerResponse(
         String cnpj,
+        String rootCnpj,
+        String branchOrder,
+        String digitoControle,
+        boolean matriz,
         String razaoSocial,
         String nomeFantasia,
         String ie,

@@ -3,6 +3,7 @@ package br.com.costumerental.nfe.application;
 import br.com.costumerental.nfe.api.dto.NfeEventResponse;
 import br.com.costumerental.nfe.api.dto.NfeInutilizacaoRequest;
 import br.com.costumerental.nfe.api.dto.NfeInutilizacaoResponse;
+import br.com.costumerental.nfe.domain.Cnpj;
 import br.com.costumerental.nfe.domain.FiscalDocument;
 import br.com.costumerental.nfe.domain.FiscalDocumentEvent;
 import br.com.costumerental.nfe.domain.FiscalDocumentInutilization;
@@ -83,7 +84,9 @@ public class FiscalDocumentEventService {
     @Transactional
     public FiscalDocumentInutilization saveInutilization(String eventXml, NfeInutilizacaoRequest request,
                                                           NfeInutilizacaoResponse response) {
-        NfeIssuer issuer = issuerRepository.findByCnpj(request.getCnpj())
+        NfeIssuer issuer = issuerRepository.findByEmpresaRootCnpjAndBranchOrder(
+                        Cnpj.parse(request.getCnpj()).root(),
+                        Cnpj.parse(request.getCnpj()).branch())
                 .orElseThrow(() -> new IllegalStateException("Emitente nao encontrado para CNPJ: " + request.getCnpj()));
         FiscalEventXml responseXmlEntity = response.getResponseXml() != null
                 ? eventXmlRepository.save(new FiscalEventXml("RESPONSE", response.getResponseXml()))

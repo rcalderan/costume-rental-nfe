@@ -5,6 +5,8 @@ import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
 import br.com.costumerental.nfe.application.FiscalDocumentNumberControlService;
 import br.com.costumerental.nfe.config.NfeProperties;
+import br.com.costumerental.nfe.domain.Empresa;
+import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeConfigFactory;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeLibraryAdapter;
@@ -55,13 +57,36 @@ class NfeLibraryIntegrationTest {
     void shouldSignAndValidateXmlWithJavaNFe() throws Exception {
         Certificado certificado = certificateLoader.load();
         ConfiguracoesNfe config = configFactory.create(certificado);
-        TEnviNFe enviNFe = xmlAssembler.build(sampleRequest());
+        TEnviNFe enviNFe = xmlAssembler.build(sampleRequest(), buildIssuer());
 
         TEnviNFe signed = libraryAdapter.signAndValidate(config, enviNFe);
         String xml = libraryAdapter.toXml(signed);
 
         assertThat(signed.getNFe().get(0).getSignature()).isNotNull();
         assertThat(xml).contains("Signature");
+    }
+
+    private NfeIssuer buildIssuer() {
+        Empresa empresa = new Empresa();
+        empresa.setRootCnpj("08299621");
+        empresa.setRazaoSocial("Emitente Teste");
+        empresa.setCrt("1");
+        empresa.setPaisCodigo("1058");
+        empresa.setPaisNome("BRASIL");
+        NfeIssuer iss = new NfeIssuer();
+        iss.setId(1L);
+        iss.setEmpresa(empresa);
+        iss.setBranchOrder("0001");
+        iss.setDigitoControle("20");
+        iss.setIe("111111111111");
+        iss.setLogradouro("Rua Teste");
+        iss.setNumero("0");
+        iss.setBairro("Centro");
+        iss.setMunicipioCodigo("3548906");
+        iss.setMunicipioNome("Sao Carlos");
+        iss.setUf("SP");
+        iss.setCep("13560000");
+        return iss;
     }
 
     private NfeEmissionRequest sampleRequest() {

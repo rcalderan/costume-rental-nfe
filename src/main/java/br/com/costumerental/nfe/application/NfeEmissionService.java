@@ -2,7 +2,9 @@ package br.com.costumerental.nfe.application;
 
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeEmissionResponse;
+import br.com.costumerental.nfe.domain.Cnpj;
 import br.com.costumerental.nfe.domain.FiscalDocument;
+import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeLibraryAdapter;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeSefazConfigProvider;
 import br.com.costumerental.nfe.xml.NfeResponseMapper;
@@ -14,6 +16,8 @@ import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TNFe;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TRetEnviNFe;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 public class NfeEmissionService {
@@ -40,10 +44,11 @@ public class NfeEmissionService {
     }
 
     public NfeEmissionResponse emit(NfeEmissionRequest request) {
-        ensureIssuerConfigured();
+        NfeIssuer issuer = resolveIssuer(request);
+        ensureIssuerConfigured(issuer);
         try {
             ConfiguracoesNfe config = configProvider.buildConfig();
-            TEnviNFe enviNFe = xmlAssembler.build(request);
+            TEnviNFe enviNFe = xmlAssembler.build(request, issuer);
             TEnviNFe signedEnviNFe = libraryAdapter.signAndValidate(config, enviNFe);
             String signedXml = libraryAdapter.toXml(signedEnviNFe);
             FiscalDocument document = fiscalDocumentService.saveSigned(extractAccessKey(signedEnviNFe), signedXml, request);
@@ -69,10 +74,28 @@ public class NfeEmissionService {
         }
     }
 
-    private void ensureIssuerConfigured() {
-        if (!issuerConfigService.isConfigured()) {
+    private NfeIssuer resolveIssuer(NfeEmissionRequest request) {
+        if (request.getIssuerCnpj() != null && !request.getIssuerCnpj().isBlank()) {
+            Optional<NfeIssuer> issuer = issuerConfigService.findByCnpj(request.getIssuerCnpj());
+            if (issuer.isEmpty()) {
+                throw new br.com.costumerental.nfe.exception.NfeBusinessException(
+                        "Emitente nao encontrado para o CNPJ: " + request.getIssuerCnpj());
+            }
+            if (!issuer.get().isActive()) {
+                throw new br.com.costumerental.nfe.exception.NfeBusinessException(
+                        "Emitente inativo para o CNPJ: " + request.getIssuerCnpj());
+            }
+            return issuer.get();
+        }
+        return issuerConfigService.findCurrentIssuer()
+                .orElseThrow(() -> new br.com.costumerental.nfe.exception.NfeBusinessException(
+                        "Nenhum emitente ativo encontrado. Configure o CNPJ do emitente antes de emitir notas."));
+    }
+
+    private void ensureIssuerConfigured(NfeIssuer issuer) {
+        if (issuer == null) {
             throw new br.com.costumerental.nfe.exception.NfeBusinessException(
-                    "Emitente não configurado. Configure o CNPJ do emitente antes de emitir notas.");
+                    "Emitente nao configurado. Configure o CNPJ do emitente antes de emitir notas.");
         }
     }
 
@@ -88,10 +111,11 @@ public class NfeEmissionService {
     }
 
     public NfeEmissionResponse buildAndSign(NfeEmissionRequest request) {
-        ensureIssuerConfigured();
+        NfeIssuer issuer = resolveIssuer(request);
+        ensureIssuerConfigured(issuer);
         try {
             ConfiguracoesNfe config = configProvider.buildConfig();
-            TEnviNFe enviNFe = xmlAssembler.build(request);
+            TEnviNFe enviNFe = xmlAssembler.build(request, issuer);
             TEnviNFe signedEnviNFe = libraryAdapter.signAndValidate(config, enviNFe);
             String signedXml = libraryAdapter.toXml(signedEnviNFe);
             return NfeEmissionResponse.builder()

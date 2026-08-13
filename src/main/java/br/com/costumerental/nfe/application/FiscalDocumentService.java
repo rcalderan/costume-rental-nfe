@@ -44,7 +44,7 @@ public class FiscalDocumentService {
 
     @Transactional
     public FiscalDocument saveSigned(String accessKey, String signedXml, NfeEmissionRequest request) {
-        NfeIssuer issuer = issuerRepository.findFirstByActiveTrue()
+        NfeIssuer issuer = issuerRepository.findFirstByActiveTrueOrderByBranchOrderAsc()
                 .orElseThrow(() -> new IllegalStateException("Nenhum emitente ativo encontrado para salvar documento fiscal"));
         NfeStatusEntity processingStatus = statusEntity(NfeStatus.PROCESSING);
         NfeDocumentTypeEntity docType = documentTypeRepository.findByCode(DOCUMENT_TYPE_NFE)
