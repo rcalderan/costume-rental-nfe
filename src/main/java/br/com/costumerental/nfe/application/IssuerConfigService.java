@@ -1,30 +1,39 @@
 package br.com.costumerental.nfe.application;
 
 import br.com.costumerental.nfe.config.NfeProperties;
+import br.com.costumerental.nfe.domain.Cnpj;
+import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateEncryption;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
+import br.com.costumerental.nfe.repository.FirmRepository;
 import br.com.costumerental.nfe.repository.NfeIssuerRepository;
 import br.com.swconsultoria.certificado.exception.CertificadoException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class IssuerConfigService {
 
+    private static final String MATRIZ_BRANCH = "0001";
+
     private final NfeIssuerRepository issuerRepository;
+    private final FirmRepository firmRepository;
     private final CertificateEncryption certificateEncryption;
     private final CertificateLoader certificateLoader;
     private final NfeProperties properties;
 
     public IssuerConfigService(NfeIssuerRepository issuerRepository,
+                               FirmRepository firmRepository,
                                CertificateEncryption certificateEncryption,
                                CertificateLoader certificateLoader,
                                NfeProperties properties) {
         this.issuerRepository = issuerRepository;
+        this.firmRepository = firmRepository;
         this.certificateEncryption = certificateEncryption;
         this.certificateLoader = certificateLoader;
         this.properties = properties;
@@ -32,7 +41,7 @@ public class IssuerConfigService {
 
     @PostConstruct
     public void loadDefaultIssuer() {
-        Optional<NfeIssuer> issuer = issuerRepository.findFirstByActiveTrue();
+        Optional<NfeIssuer> issuer = issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc();
         issuer.ifPresent(this::updateProperties);
         if (issuer.isEmpty()) {
             String cnpj = properties.getEmit().getCnpj();
@@ -47,18 +56,43 @@ public class IssuerConfigService {
     }
 
     public Optional<NfeIssuer> findCurrentIssuer() {
-        return issuerRepository.findFirstByActiveTrue();
+        return issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc();
+    }
+
+    public Optional<NfeIssuer> findByCnpj(String cnpj14) {
+        Cnpj cnpj = Cnpj.parse(cnpj14);
+        return issuerRepository.findByFirmRootCnpjAndFirmBranchOrder(cnpj.root(), cnpj.branch());
+    }
+
+    public List<NfeIssuer> findBranchesOf(String rootCnpj) {
+        return issuerRepository.findByFirmRootCnpj(rootCnpj);
     }
 
     public NfeIssuer configureIssuer(IssuerSetupRequest request) {
-        NfeIssuer issuer = issuerRepository.findById(request.cnpj())
+        Cnpj cnpj = Cnpj.parse(request.cnpj());
+        if (!cnpj.isDvValido()) {
+            throw new IllegalArgumentException(
+                    "Digitos de controle do CNPJ invalidos. Esperado: "
+                            + Cnpj.calcularDv(cnpj.root(), cnpj.branch()) + ", recebido: " + cnpj.dv());
+        }
+        Firm firm = firmRepository.findByRootCnpjAndBranchOrder(cnpj.root(), cnpj.branch())
+                .orElseGet(Firm::new);
+        firm.setRootCnpj(cnpj.root());
+        firm.setBranchOrder(cnpj.branch());
+        firm.setDigit(cnpj.dv());
+        firm.setRazaoSocial(request.razaoSocial());
+        firm.setCrt(request.crt());
+        firm.setPaisCodigo(request.paisCodigo());
+        firm.setPaisNome(request.paisNome());
+        firm.setMatrizCnpj(cnpj.format());
+        firm = firmRepository.save(firm);
+
+        NfeIssuer issuer = issuerRepository.findByFirmRootCnpjAndFirmBranchOrder(cnpj.root(), cnpj.branch())
                 .orElse(new NfeIssuer());
-        issuer.setCnpj(request.cnpj());
-        issuer.setRazaoSocial(request.razaoSocial());
+        issuer.setFirm(firm);
         issuer.setNomeFantasia(request.nomeFantasia());
         issuer.setIe(request.ie());
         issuer.setIm(request.im());
-        issuer.setCrt(request.crt());
         issuer.setFone(request.fone());
         issuer.setLogradouro(request.logradouro());
         issuer.setNumero(request.numero());
@@ -67,30 +101,87 @@ public class IssuerConfigService {
         issuer.setMunicipioNome(request.municipioNome());
         issuer.setUf(request.uf());
         issuer.setCep(request.cep());
-        issuer.setPaisCodigo(request.paisCodigo());
-        issuer.setPaisNome(request.paisNome());
         issuer.setActive(true);
-
-        issuerRepository.findAll().stream()
-                .filter(i -> !request.cnpj().equals(i.getCnpj()) && i.isActive())
-                .forEach(i -> {
-                    i.setActive(false);
-                    issuerRepository.save(i);
-                });
 
         NfeIssuer saved = issuerRepository.save(issuer);
         updateProperties(saved);
         return saved;
     }
 
-    private NfeIssuer seedFromProperties(String cnpj) {
+    public NfeIssuer configureBranch(IssuerBranchSetupRequest request) {
+        Cnpj cnpj = Cnpj.parse(request.cnpj());
+        if (cnpj.isMatriz()) {
+            throw new IllegalArgumentException(
+                    "CNPJ informado e da matriz (sufixo 0001). Use o endpoint /setup para cadastrar a matriz.");
+        }
+        if (!cnpj.isDvValido()) {
+            throw new IllegalArgumentException(
+                    "Digitos de controle do CNPJ invalidos. Esperado: "
+                            + Cnpj.calcularDv(cnpj.root(), cnpj.branch()) + ", recebido: " + cnpj.dv());
+        }
+        Firm matriz = firmRepository.findByRootCnpjAndBranchOrder(cnpj.root(), MATRIZ_BRANCH)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Matriz nao cadastrada para a raiz " + cnpj.root()
+                                + ". Cadastre a matriz (sufixo 0001) primeiro."));
+
+        Firm firm = firmRepository.findByRootCnpjAndBranchOrder(cnpj.root(), cnpj.branch())
+                .orElseGet(Firm::new);
+        firm.setRootCnpj(cnpj.root());
+        firm.setBranchOrder(cnpj.branch());
+        firm.setDigit(cnpj.dv());
+        firm.setRazaoSocial(matriz.getRazaoSocial());
+        firm.setCrt(matriz.getCrt());
+        firm.setPaisCodigo(matriz.getPaisCodigo());
+        firm.setPaisNome(matriz.getPaisNome());
+        firm.setMatrizCnpj(matriz.getMatrizCnpj());
+        firm = firmRepository.save(firm);
+
+        NfeIssuer issuer = issuerRepository.findByFirmRootCnpjAndFirmBranchOrder(cnpj.root(), cnpj.branch())
+                .orElse(new NfeIssuer());
+        issuer.setFirm(firm);
+        issuer.setNomeFantasia(request.nomeFantasia());
+        issuer.setIe(request.ie());
+        issuer.setIm(request.im());
+        issuer.setFone(request.fone());
+        issuer.setLogradouro(request.logradouro());
+        issuer.setNumero(request.numero());
+        issuer.setBairro(request.bairro());
+        issuer.setMunicipioCodigo(request.municipioCodigo());
+        issuer.setMunicipioNome(request.municipioNome());
+        issuer.setUf(request.uf());
+        issuer.setCep(request.cep());
+        issuer.setActive(true);
+
+        if (request.certificatePath() != null && !request.certificatePath().isBlank()) {
+            issuer.setCertificatePath(request.certificatePath());
+            if (request.certificatePassword() != null && !request.certificatePassword().isBlank()) {
+                issuer.setEncryptedPassword(certificateEncryption.encrypt(request.certificatePassword()));
+            }
+            issuer.setCertificateTipo(properties.getCertificate().getTipo());
+        }
+
+        return issuerRepository.save(issuer);
+    }
+
+    private NfeIssuer seedFromProperties(String cnpj14) {
+        Cnpj cnpj = Cnpj.parse(cnpj14);
+        Firm firm = firmRepository.findByRootCnpjAndBranchOrder(cnpj.root(), cnpj.branch())
+                .orElseGet(Firm::new);
+        firm.setRootCnpj(cnpj.root());
+        firm.setBranchOrder(cnpj.branch());
+        firm.setDigit(cnpj.dv());
+        firm.setRazaoSocial(properties.getEmit().getRazaoSocial());
+        firm.setCrt(properties.getEmit().getCrt());
+        firm.setPaisCodigo(properties.getEmit().getEndereco().getPaisCodigo());
+        firm.setPaisNome(properties.getEmit().getEndereco().getPaisNome());
+        firm.setMatrizCnpj(cnpj.format());
+        firm = firmRepository.save(firm);
+
         NfeIssuer issuer = new NfeIssuer();
-        issuer.setCnpj(cnpj);
-        issuer.setRazaoSocial(properties.getEmit().getRazaoSocial());
+        issuer.setFirm(firm);
         issuer.setNomeFantasia(properties.getEmit().getNomeFantasia());
         issuer.setIe(properties.getEmit().getIe());
         issuer.setIm(properties.getEmit().getIm());
-        issuer.setCrt(properties.getEmit().getCrt());
         issuer.setFone(properties.getEmit().getFone());
         issuer.setLogradouro(properties.getEmit().getEndereco().getLogradouro());
         issuer.setNumero(properties.getEmit().getEndereco().getNumero());
@@ -99,8 +190,6 @@ public class IssuerConfigService {
         issuer.setMunicipioNome(properties.getEmit().getEndereco().getMunicipioNome());
         issuer.setUf(properties.getEmit().getEndereco().getUf());
         issuer.setCep(properties.getEmit().getEndereco().getCep());
-        issuer.setPaisCodigo(properties.getEmit().getEndereco().getPaisCodigo());
-        issuer.setPaisNome(properties.getEmit().getEndereco().getPaisNome());
         issuer.setCertificatePath(properties.getCertificate().getPath());
         issuer.setCertificateTipo(properties.getCertificate().getTipo());
 
@@ -115,7 +204,7 @@ public class IssuerConfigService {
 
     public void activate(String certificatePath, String certificatePassword) throws CertificadoException {
         certificateLoader.load(certificatePath, certificatePassword);
-        NfeIssuer issuer = issuerRepository.findFirstByActiveTrue()
+        NfeIssuer issuer = issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()
                 .orElseThrow(() -> new IllegalStateException("Nenhum emitente ativo encontrado na tabela nfe_issuer."));
         updateCertificate(issuer, certificatePath, certificatePassword);
         updateProperties(issuer);

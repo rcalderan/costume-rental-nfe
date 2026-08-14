@@ -32,4 +32,10 @@ public class NfeEmissionRequest implements Serializable {
     private String originId;
 
     private String origin;
+
+    /**
+     * CNPJ do emitente (matriz ou filial) a ser usado na emissao.
+     * Se omitido, usa a matriz ativa (compatibilidade com chamadas legadas).
+     */
+    private String issuerCnpj;
 }

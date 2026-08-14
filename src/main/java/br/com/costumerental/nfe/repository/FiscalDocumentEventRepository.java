@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface FiscalDocumentEventRepository extends JpaRepository<FiscalDocumentEvent, Long> {
 
-    List<FiscalDocumentEvent> findByAccessKeyOrderBySequenceDesc(String accessKey);
+    List<FiscalDocumentEvent> findByFiscalDocumentIdOrderBySequenceDesc(Long fiscalDocumentId);
 }

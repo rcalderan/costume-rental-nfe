@@ -4,6 +4,7 @@ import br.com.costumerental.nfe.api.dto.CustomerInfo;
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
 import br.com.costumerental.nfe.config.NfeProperties;
+import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import org.springframework.stereotype.Component;
@@ -38,8 +39,8 @@ public class NfeXmlAssembler {
         this.cityCodeResolver = cityCodeResolver;
     }
 
-    public TEnviNFe build(NfeEmissionRequest request) {
-        String xml = buildXmlString(request);
+    public TEnviNFe build(NfeEmissionRequest request, NfeIssuer issuer) {
+        String xml = buildXmlString(request, issuer);
         try {
             return XmlNfeUtil.xmlToObject(xml, TEnviNFe.class);
         } catch (JAXBException e) {
@@ -47,11 +48,11 @@ public class NfeXmlAssembler {
         }
     }
 
-    String buildXmlString(NfeEmissionRequest request) {
+    String buildXmlString(NfeEmissionRequest request, NfeIssuer issuer) {
         OffsetDateTime issueDate = OffsetDateTime.now(ZoneId.of("America/Sao_Paulo"));
         String invoiceNumber = accessKeyGenerator.generateInvoiceNumber();
         String cnf = accessKeyGenerator.generateCNF();
-        String accessKey = accessKeyGenerator.generate(issueDate, properties.getSerie(), invoiceNumber, cnf);
+        String accessKey = accessKeyGenerator.generate(issueDate, issuer, properties.getSerie(), invoiceNumber, cnf);
         String cDV = accessKey.substring(accessKey.length() - 1);
 
         StringBuilder sb = new StringBuilder();
@@ -61,8 +62,8 @@ public class NfeXmlAssembler {
         sb.append("<indSinc>1</indSinc>");
         sb.append("<NFe>");
         sb.append("<infNFe Id=\"NFe").append(accessKey).append("\" versao=\"4.00\">");
-        sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request));
-        sb.append(buildEmit());
+        sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer));
+        sb.append(buildEmit(issuer));
         sb.append(buildDest(request.getCustomer()));
 
         int itemNumber = 1;
@@ -80,10 +81,10 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildIde(OffsetDateTime issueDate, String nNF, String cNF, String cDV, NfeEmissionRequest request) {
+    private String buildIde(OffsetDateTime issueDate, String nNF, String cNF, String cDV, NfeEmissionRequest request, NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<ide>");
-        sb.append("<cUF>").append(UfMapper.codeFor(properties.getEmit().getUf())).append("</cUF>");
+        sb.append("<cUF>").append(UfMapper.codeFor(issuer.getUf())).append("</cUF>");
         sb.append("<cNF>").append(cNF).append("</cNF>");
         sb.append("<natOp>").append(escape(request.getNatureOperation())).append("</natOp>");
         sb.append("<mod>55</mod>");
@@ -92,7 +93,7 @@ public class NfeXmlAssembler {
         sb.append("<dhEmi>").append(ISO_FMT.format(issueDate)).append("</dhEmi>");
         sb.append("<tpNF>1</tpNF>");
         sb.append("<idDest>1</idDest>");
-        sb.append("<cMunFG>").append(escape(properties.getEmit().getEndereco().getMunicipioCodigo())).append("</cMunFG>");
+        sb.append("<cMunFG>").append(escape(issuer.getMunicipioCodigo())).append("</cMunFG>");
         sb.append("<tpImp>1</tpImp>");
         sb.append("<tpEmis>1</tpEmis>");
         sb.append("<cDV>").append(cDV).append("</cDV>");
@@ -106,33 +107,31 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildEmit() {
-        NfeProperties.EmitProperties emit = properties.getEmit();
-        NfeProperties.EnderecoProperties end = emit.getEndereco();
+    private String buildEmit(NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<emit>");
-        sb.append("<CNPJ>").append(digitsOnly(emit.getCnpj())).append("</CNPJ>");
-        sb.append("<xNome>").append(escape(emit.getRazaoSocial())).append("</xNome>");
-        if (emit.getNomeFantasia() != null && !emit.getNomeFantasia().isBlank()) {
-            sb.append("<xFant>").append(escape(emit.getNomeFantasia())).append("</xFant>");
+        sb.append("<CNPJ>").append(digitsOnly(issuer.getCnpj())).append("</CNPJ>");
+        sb.append("<xNome>").append(escape(issuer.getRazaoSocial())).append("</xNome>");
+        if (issuer.getNomeFantasia() != null && !issuer.getNomeFantasia().isBlank()) {
+            sb.append("<xFant>").append(escape(issuer.getNomeFantasia())).append("</xFant>");
         }
         sb.append("<enderEmit>");
-        sb.append("<xLgr>").append(escape(end.getLogradouro())).append("</xLgr>");
-        sb.append("<nro>").append(escape(end.getNumero())).append("</nro>");
-        sb.append("<xBairro>").append(escape(end.getBairro())).append("</xBairro>");
-        sb.append("<cMun>").append(escape(end.getMunicipioCodigo())).append("</cMun>");
-        sb.append("<xMun>").append(escape(end.getMunicipioNome())).append("</xMun>");
-        sb.append("<UF>").append(escape(end.getUf())).append("</UF>");
-        sb.append("<CEP>").append(digitsOnly(end.getCep())).append("</CEP>");
-        sb.append("<cPais>").append(escape(end.getPaisCodigo())).append("</cPais>");
-        sb.append("<xPais>").append(escape(end.getPaisNome())).append("</xPais>");
-        if (emit.getFone() != null && !emit.getFone().isBlank()) {
-            sb.append("<fone>").append(digitsOnly(emit.getFone())).append("</fone>");
+        sb.append("<xLgr>").append(escape(issuer.getLogradouro())).append("</xLgr>");
+        sb.append("<nro>").append(escape(issuer.getNumero())).append("</nro>");
+        sb.append("<xBairro>").append(escape(issuer.getBairro())).append("</xBairro>");
+        sb.append("<cMun>").append(escape(issuer.getMunicipioCodigo())).append("</cMun>");
+        sb.append("<xMun>").append(escape(issuer.getMunicipioNome())).append("</xMun>");
+        sb.append("<UF>").append(escape(issuer.getUf())).append("</UF>");
+        sb.append("<CEP>").append(digitsOnly(issuer.getCep())).append("</CEP>");
+        sb.append("<cPais>").append(escape(issuer.getPaisCodigo())).append("</cPais>");
+        sb.append("<xPais>").append(escape(issuer.getPaisNome())).append("</xPais>");
+        if (issuer.getFone() != null && !issuer.getFone().isBlank()) {
+            sb.append("<fone>").append(digitsOnly(issuer.getFone())).append("</fone>");
         }
         sb.append("</enderEmit>");
-        String ie = emit.getIe() != null && !emit.getIe().isBlank() ? emit.getIe() : "ISENTO";
+        String ie = issuer.getIe() != null && !issuer.getIe().isBlank() ? issuer.getIe() : "ISENTO";
         sb.append("<IE>").append(escape(ie)).append("</IE>");
-        sb.append("<CRT>").append(escape(emit.getCrt())).append("</CRT>");
+        sb.append("<CRT>").append(escape(issuer.getCrt())).append("</CRT>");
         sb.append("</emit>");
         return sb.toString();
     }

@@ -69,10 +69,8 @@ public class NfeConsultationService {
 
     private void atualizarDocumento(String chaveAcesso, NfeEmissionResponse response) {
         Optional<FiscalDocument> document = fiscalDocumentService.findByAccessKey(chaveAcesso);
-        boolean authorized = response.getStatus() == br.com.costumerental.nfe.domain.NfeStatus.AUTHORIZED;
-        String rejectionReason = authorized ? null : response.getStatusMessage();
         document.ifPresent(doc -> fiscalDocumentService.updateFromConsultation(doc, response.getStatus(),
-                response.getProtocol(), response.getAuthorizedXml(), rejectionReason));
+                response.getStatusCode(), response.getProtocol(), response.getAuthorizedXml()));
     }
 
     private StatusServicoResponse mapStatusServico(TRetConsStatServ retorno) {

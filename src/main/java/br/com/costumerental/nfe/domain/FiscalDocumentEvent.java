@@ -6,12 +6,13 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
@@ -28,27 +29,27 @@ public class FiscalDocumentEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 44)
-    private String accessKey;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "fiscal_document_id", nullable = false)
+    private FiscalDocument fiscalDocument;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private NfeEventType eventType;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "event_type_id", nullable = false)
+    private NfeEventTypeEntity eventType;
+
+    @Column(name = "sefaz_status_code", length = 3)
+    private String sefazStatusCode;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_xml_id")
+    private FiscalEventXml eventXml;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "response_xml_id")
+    private FiscalEventXml responseXml;
 
     @Column(nullable = false, length = 3)
     private String sequence;
-
-    @Lob
-    private String eventXml;
-
-    @Lob
-    private String responseXml;
-
-    @Column(length = 3)
-    private String statusCode;
-
-    @Column(length = 500)
-    private String statusMessage;
 
     @Column(length = 20)
     private String protocol;

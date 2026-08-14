@@ -6,10 +6,13 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
@@ -26,11 +29,12 @@ public class FiscalDocumentInutilization {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "issuer_id", nullable = false)
+    private NfeIssuer issuer;
+
     @Column(name = "inutilization_year", nullable = false, length = 2)
     private String year;
-
-    @Column(nullable = false, length = 14)
-    private String cnpj;
 
     @Column(nullable = false, length = 2)
     private String model;
@@ -47,17 +51,15 @@ public class FiscalDocumentInutilization {
     @Column(nullable = false, length = 255)
     private String justification;
 
-    @Column(length = 3)
-    private String statusCode;
+    @Column(name = "sefaz_status_code", length = 3)
+    private String sefazStatusCode;
 
-    @Column(length = 500)
-    private String statusMessage;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "response_xml_id")
+    private FiscalEventXml responseXml;
 
     @Column(length = 20)
     private String protocol;
-
-    @Lob
-    private String responseXml;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

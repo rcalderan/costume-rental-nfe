@@ -3,7 +3,10 @@ package br.com.costumerental.nfe;
 import br.com.costumerental.nfe.api.dto.CustomerInfo;
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
+import br.com.costumerental.nfe.application.FiscalDocumentNumberControlService;
 import br.com.costumerental.nfe.config.NfeProperties;
+import br.com.costumerental.nfe.domain.Firm;
+import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeConfigFactory;
 import br.com.costumerental.nfe.infrastructure.sefaz.NfeLibraryAdapter;
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -25,10 +29,14 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = {NfeProperties.class, CertificateLoader.class, NfeConfigFactory.class,
-        NfeXmlAssembler.class, AccessKeyGenerator.class, IbgeCityCodeResolver.class, NfeLibraryAdapter.class})
+        NfeXmlAssembler.class, AccessKeyGenerator.class, IbgeCityCodeResolver.class, NfeLibraryAdapter.class,
+        FiscalDocumentNumberControlService.class})
 @EnableConfigurationProperties
 @ActiveProfiles("test")
 class NfeLibraryIntegrationTest {
+
+    @MockBean
+    private FiscalDocumentNumberControlService numberControlService;
 
     @Autowired
     private NfeProperties properties;
@@ -49,13 +57,35 @@ class NfeLibraryIntegrationTest {
     void shouldSignAndValidateXmlWithJavaNFe() throws Exception {
         Certificado certificado = certificateLoader.load();
         ConfiguracoesNfe config = configFactory.create(certificado);
-        TEnviNFe enviNFe = xmlAssembler.build(sampleRequest());
+        TEnviNFe enviNFe = xmlAssembler.build(sampleRequest(), buildIssuer());
 
         TEnviNFe signed = libraryAdapter.signAndValidate(config, enviNFe);
         String xml = libraryAdapter.toXml(signed);
 
         assertThat(signed.getNFe().get(0).getSignature()).isNotNull();
         assertThat(xml).contains("Signature");
+    }
+
+    private NfeIssuer buildIssuer() {
+        Firm firm = new Firm();
+        firm.setRootCnpj("08299621");
+        firm.setBranchOrder("0001");
+        firm.setDigit("20");
+        firm.setRazaoSocial("Emitente Teste");
+        firm.setCrt("1");
+        firm.setPaisCodigo("1058");
+        firm.setPaisNome("BRASIL");
+        NfeIssuer iss = new NfeIssuer();
+        iss.setFirm(firm);
+        iss.setIe("111111111111");
+        iss.setLogradouro("Rua Teste");
+        iss.setNumero("0");
+        iss.setBairro("Centro");
+        iss.setMunicipioCodigo("3548906");
+        iss.setMunicipioNome("Sao Carlos");
+        iss.setUf("SP");
+        iss.setCep("13560000");
+        return iss;
     }
 
     private NfeEmissionRequest sampleRequest() {
