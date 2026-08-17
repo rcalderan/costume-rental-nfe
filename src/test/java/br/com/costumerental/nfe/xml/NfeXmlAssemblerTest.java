@@ -126,6 +126,14 @@ class NfeXmlAssemblerTest {
     }
 
     @Test
+    void shouldIncludeCobrForNfe() {
+        NfeEmissionRequest request = sampleRequest();
+        String xml = assembler.buildXmlString(request, issuer);
+        assertThat(xml).contains("<cobr>");
+        assertThat(xml).contains("<nFat>");
+    }
+
+    @Test
     void shouldBuildNfceWithModel65TpImp4AndIndPres1() {
         NfeXmlAssembler nfceAssembler = createAssembler("65");
         NfeEmissionRequest request = sampleRequest();
@@ -135,6 +143,19 @@ class NfeXmlAssemblerTest {
         assertThat(xml).contains("<mod>65</mod>");
         assertThat(xml).contains("<tpImp>4</tpImp>");
         assertThat(xml).contains("<indPres>1</indPres>");
+        assertThat(xml).doesNotContain("<cobr>");
+    }
+
+    @Test
+    void shouldBuildNfceWithTpImp5ForMensagemEletronica() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+        request.setPrintReceipt(false);
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<tpImp>5</tpImp>");
+        assertThat(xml).doesNotContain("<cobr>");
     }
 
     @Test

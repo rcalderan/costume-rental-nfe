@@ -38,4 +38,11 @@ public class NfeEmissionRequest implements Serializable {
      * Se omitido, usa a matriz ativa (compatibilidade com chamadas legadas).
      */
     private String issuerCnpj;
+
+    /**
+     * Indica se o consumidor deseja receber o DANFE NFC-e impresso (tpImp=4).
+     * false envia por mensagem eletronica (tpImp=5). Aplica-se apenas ao
+     * modelo 65; para NF-e o valor e ignorado. Padrao: true.
+     */
+    private Boolean printReceipt;
 }

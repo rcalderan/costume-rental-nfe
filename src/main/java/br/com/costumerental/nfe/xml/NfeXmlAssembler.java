@@ -74,7 +74,9 @@ public class NfeXmlAssembler {
 
         sb.append(buildTotal(request.getItems()));
         sb.append("<transp><modFrete>9</modFrete></transp>");
-        sb.append(buildCobr(invoiceNumber, request.getItems()));
+        if (!isNFCe()) {
+            sb.append(buildCobr(invoiceNumber, request.getItems()));
+        }
         sb.append(buildPag(request.getItems()));
         sb.append("</infNFe>");
         if (isNFCe()) {
@@ -87,6 +89,13 @@ public class NfeXmlAssembler {
 
     private boolean isNFCe() {
         return "65".equals(properties.getModelo());
+    }
+
+    private String tpImpForIde(NfeEmissionRequest request) {
+        if (!isNFCe()) {
+            return "1";
+        }
+        return Boolean.FALSE.equals(request.getPrintReceipt()) ? "5" : "4";
     }
 
     /**
@@ -121,7 +130,7 @@ public class NfeXmlAssembler {
         sb.append("<tpNF>1</tpNF>");
         sb.append("<idDest>1</idDest>");
         sb.append("<cMunFG>").append(escape(issuer.getMunicipioCodigo())).append("</cMunFG>");
-        sb.append("<tpImp>").append(isNFCe() ? "4" : "1").append("</tpImp>");
+        sb.append("<tpImp>").append(tpImpForIde(request)).append("</tpImp>");
         sb.append("<tpEmis>1</tpEmis>");
         sb.append("<cDV>").append(cDV).append("</cDV>");
         sb.append("<tpAmb>").append(properties.getAmbiente()).append("</tpAmb>");
