@@ -1,5 +1,6 @@
 package br.com.costumerental.nfe.infrastructure.sefaz;
 
+import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.infrastructure.certificado.CertificateLoader;
 import br.com.swconsultoria.certificado.Certificado;
 import br.com.swconsultoria.certificado.exception.CertificadoException;
@@ -20,5 +21,10 @@ public class NfeSefazConfigProvider {
     public ConfiguracoesNfe buildConfig() throws CertificadoException {
         Certificado certificado = certificateLoader.load();
         return configFactory.create(certificado);
+    }
+
+    public ConfiguracoesNfe buildConfig(NfeIssuer issuer) throws CertificadoException {
+        Certificado certificado = certificateLoader.load();
+        return configFactory.create(certificado, issuer);
     }
 }

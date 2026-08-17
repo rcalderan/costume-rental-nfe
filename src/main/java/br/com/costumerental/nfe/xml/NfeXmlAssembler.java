@@ -75,7 +75,7 @@ public class NfeXmlAssembler {
 
         int itemNumber = 1;
         for (NfeItemRequest item : request.getItems()) {
-            sb.append(buildDet(item, itemNumber++));
+            sb.append(buildDet(item, itemNumber++, issuer));
         }
 
         sb.append(buildTotal(request.getItems()));
@@ -216,7 +216,7 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildDet(NfeItemRequest item, int itemNumber) {
+    private String buildDet(NfeItemRequest item, int itemNumber, NfeIssuer issuer) {
         BigDecimal qCom = round(item.getQuantity(), 4);
         BigDecimal vUnCom = round(item.getUnitValue(), 10);
         BigDecimal vProd = round(qCom.multiply(vUnCom), 2);
@@ -241,18 +241,18 @@ public class NfeXmlAssembler {
         sb.append("</prod>");
         sb.append("<imposto>");
         sb.append("<vTotTrib>0.00</vTotTrib>");
-        sb.append(buildIcms());
-        sb.append(buildPis());
-        sb.append(buildCofins());
+        sb.append(buildIcms(issuer));
+        sb.append(buildPis(issuer));
+        sb.append(buildCofins(issuer));
         sb.append("</imposto>");
         sb.append("</det>");
         return sb.toString();
     }
 
-    private String buildIcms() {
+    private String buildIcms(NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<ICMS>");
-        if (isRegimeNormal()) {
+        if (isRegimeNormal(issuer)) {
             sb.append("<ICMS40>");
             sb.append("<orig>0</orig>");
             sb.append("<CST>41</CST>");
@@ -267,10 +267,10 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildPis() {
+    private String buildPis(NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<PIS>");
-        if (isRegimeNormal()) {
+        if (isRegimeNormal(issuer)) {
             sb.append("<PISOutr>");
             sb.append("<CST>49</CST>");
             sb.append("<vBC>0.00</vBC>");
@@ -286,10 +286,10 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildCofins() {
+    private String buildCofins(NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<COFINS>");
-        if (isRegimeNormal()) {
+        if (isRegimeNormal(issuer)) {
             sb.append("<COFINSOutr>");
             sb.append("<CST>49</CST>");
             sb.append("<vBC>0.00</vBC>");
@@ -305,8 +305,8 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private boolean isRegimeNormal() {
-        return "3".equals(properties.getEmit().getCrt());
+    private boolean isRegimeNormal(NfeIssuer issuer) {
+        return "3".equals(issuer.getCrt());
     }
 
     private String buildTotal(List<NfeItemRequest> items) {

@@ -14,6 +14,41 @@ export NFE_NFCE_CONSULTA_URL=https://www.homologacao.nfce.fazenda.sp.gov.br/cons
 
 O QRCode (padrao V3 online, NT 2025-001) e a URL de consulta sao embutidos no XML antes da assinatura e retornados em `qrCode`/`consultaUrl` na resposta de `/api/v1/nfe/emit`.
 
+### Corpo da requisicao (`POST /api/v1/nfe/emit`)
+
+Para NFC-e, `customer` e opcional (consumidor nao identificado). Use `printReceipt: false` para DANFE por mensagem eletronica (`tpImp=5`).
+
+```json
+{
+    "natureOperation": "Venda de mercadoria",
+    "items": [
+        {
+            "productCode": "FANT-001",
+            "description": "Fantasia Homem de Ferro - tamanho M",
+            "ncm": "61091000",
+            "cfop": "5102",
+            "unit": "UN",
+            "quantity": 1,
+            "unitValue": 150.00
+        }
+    ],
+    "payment": {
+        "tPag": "03",
+        "vPag": 150.00,
+        "tpIntegra": "2",
+        "tBand": "02",
+        "cAut": "123456"
+    },
+    "printReceipt": false
+}
+```
+
+### Formas de pagamento (`tPag`)
+
+Valores validos no schema v4.00 atual: `01` Dinheiro, `02` Cheque, `03` Cartao de Credito, `04` Cartao de Debito, `05` Credito Loja, `10` a `13` Vales, `14` Duplicata, `15` Boleto, `90` Sem Pagamento, `99` Outros.
+
+> **Nota:** `17` (PIX), `18` (Transferencia) e `19` (Fidelidade) nao constam no schema local. Para habilita-los sera necessario atualizar os schemas da SEFAZ.
+
 ## Fase atual
 
 **Fase 1** concluída: fundação + emissão em homologação com assinatura, validação de schema e envio à SEFAZ.

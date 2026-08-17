@@ -47,7 +47,7 @@ public class NfeEmissionService {
         NfeIssuer issuer = resolveIssuer(request);
         ensureIssuerConfigured(issuer);
         try {
-            ConfiguracoesNfe config = configProvider.buildConfig();
+            ConfiguracoesNfe config = configProvider.buildConfig(issuer);
             TEnviNFe enviNFe = xmlAssembler.build(request, issuer);
             TEnviNFe signedEnviNFe = libraryAdapter.signAndValidate(config, enviNFe);
             String signedXml = libraryAdapter.toXml(signedEnviNFe);
@@ -117,7 +117,7 @@ public class NfeEmissionService {
         NfeIssuer issuer = resolveIssuer(request);
         ensureIssuerConfigured(issuer);
         try {
-            ConfiguracoesNfe config = configProvider.buildConfig();
+            ConfiguracoesNfe config = configProvider.buildConfig(issuer);
             TEnviNFe enviNFe = xmlAssembler.build(request, issuer);
             TEnviNFe signedEnviNFe = libraryAdapter.signAndValidate(config, enviNFe);
             String signedXml = libraryAdapter.toXml(signedEnviNFe);

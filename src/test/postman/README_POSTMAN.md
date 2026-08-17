@@ -10,6 +10,8 @@ Coleção Postman do microsserviço `costume-rental-nfe`, com massas de teste pa
   - `Emitir NF-e - Erro Validacao (sem itens)` — espera `400` (lista de itens vazia)
   - `Emitir NF-e - Erro Validacao (destinatario sem documento)` — espera `400` (CPF/CNPJ em branco)
   - `Assinar XML (sign-only) - Sucesso` — constrói e assina o XML sem enviar à SEFAZ
+- **NFC-e (modelo 65)**
+  - `Emitir NFC-e - Sem cliente` — emissão sem `customer` e com pagamento em cartão, sem impressão de DANFE (`printReceipt: false`)
 - **NF-e Consultas** *(Fase 2 — consulta e persistência)*
   - `Status do Servico SEFAZ` — consulta o status do webservice de recepção de NF-e em homologação
   - `Consultar NF-e por Chave - Sucesso` — consulta a situação da NF-e pela chave de acesso salva por uma emissão anterior (`access_key`)
@@ -90,8 +92,9 @@ A collection usa **Bearer Token** herdado a nível de collection. Em ambiente lo
 
 | Cenário | Request | Resultado esperado |
 |---------|---------|---------------------|
-| Emissão simples | 1 item, destinatário PF (CPF válido) | `201 Created`, `status: AUTHORIZED` (com SEFAZ/certificado configurados) |
-| Emissão múltiplos itens | 3 itens, destinatário PJ (CNPJ válido) com IE | `201 Created` ou `422` (se SEFAZ rejeitar), conforme validações fiscais |
+| Emissão simples NF-e | 1 item, destinatário PF (CPF válido) | `201 Created`, `status: AUTHORIZED` (com SEFAZ/certificado configurados) |
+| Emissão múltiplos itens NF-e | 3 itens, destinatário PJ (CNPJ válido) com IE | `201 Created` ou `422` (se SEFAZ rejeitar), conforme validações fiscais |
+| Emissão NFC-e sem cliente | `customer` omitido, `payment.tPag: "03"`, `printReceipt: false` | `201 Created` com `qrCode` e `consultaUrl` na resposta |
 | Lista de itens vazia | `items: []` | `400 Bad Request` (`@NotEmpty`) |
 | Documento do destinatário em branco | `customer.document: ""` | `400 Bad Request` (`@NotBlank`) |
 | Assinatura sem envio | 1 item, `sign-only` | `200 OK` com `signedXml` preenchido, sem depender da SEFAZ |

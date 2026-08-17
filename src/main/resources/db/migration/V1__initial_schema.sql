@@ -177,8 +177,7 @@ INSERT INTO nfe_status (code, description, category) VALUES
     ('ERR', 'ERROR',        'ERROR');
 
 INSERT INTO nfe_document_type (code, description) VALUES
-    ('NFE', 'Nota Fiscal Eletronica'),
-    ('NFCE', 'Nota Fiscal de Consumidor Eletronica');
+    ('NFE', 'Nota Fiscal Eletronica');
 
 INSERT INTO nfe_event_type (code, description) VALUES
     ('CANC',  'Cancelamento'),

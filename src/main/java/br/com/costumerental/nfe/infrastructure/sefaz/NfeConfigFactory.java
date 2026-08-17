@@ -2,6 +2,7 @@ package br.com.costumerental.nfe.infrastructure.sefaz;
 
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.domain.Environment;
+import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.swconsultoria.certificado.Certificado;
 import br.com.swconsultoria.certificado.exception.CertificadoException;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
@@ -36,9 +37,18 @@ public class NfeConfigFactory {
     }
 
     public ConfiguracoesNfe create(Certificado certificado) throws CertificadoException {
+        return create(certificado, properties.getEmit().getUf());
+    }
+
+    public ConfiguracoesNfe create(Certificado certificado, NfeIssuer issuer) throws CertificadoException {
+        Objects.requireNonNull(issuer, "Emitente nao pode ser nulo");
+        return create(certificado, issuer.getUf());
+    }
+
+    private ConfiguracoesNfe create(Certificado certificado, String uf) throws CertificadoException {
         Objects.requireNonNull(certificado, "Certificado nao pode ser nulo");
 
-        EstadosEnum estado = EstadosEnum.valueOf(properties.getEmit().getUf());
+        EstadosEnum estado = EstadosEnum.valueOf(uf);
         AmbienteEnum ambiente = resolveAmbiente();
 
         ConfiguracoesNfe config = ConfiguracoesNfe.criarConfiguracoes(estado, ambiente, certificado, schemasDirectory);
