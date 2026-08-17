@@ -6,6 +6,7 @@ import br.com.costumerental.nfe.api.dto.NfeItemRequest;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
+import br.com.swconsultoria.nfe.util.NFCeUtil;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import org.springframework.stereotype.Component;
 
@@ -76,8 +77,34 @@ public class NfeXmlAssembler {
         sb.append(buildCobr(invoiceNumber, request.getItems()));
         sb.append(buildPag(request.getItems()));
         sb.append("</infNFe>");
+        if (isNFCe()) {
+            sb.append(buildInfNFeSupl(accessKey));
+        }
         sb.append("</NFe>");
         sb.append("</enviNFe>");
+        return sb.toString();
+    }
+
+    private boolean isNFCe() {
+        return "65".equals(properties.getModelo());
+    }
+
+    /**
+     * Grupo suplementar exigido para NFC-e (modelo 65): QRCode (padrao V3
+     * online, NT 2025-001) e URL de consulta por chave de acesso.
+     */
+    private String buildInfNFeSupl(String accessKey) {
+        NfeProperties.NfceProperties nfce = properties.getNfce();
+        if (nfce == null || !hasText(nfce.getQrcodeUrl()) || !hasText(nfce.getConsultaUrl())) {
+            throw new IllegalStateException(
+                    "Configuracao de NFC-e incompleta: defina nfe.nfce.qrcode-url e nfe.nfce.consulta-url");
+        }
+        String qrCode = NFCeUtil.getCodeQRCodeV3(accessKey, properties.getAmbiente(), nfce.getQrcodeUrl());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<infNFeSupl>");
+        sb.append("<qrCode><![CDATA[").append(qrCode).append("]]></qrCode>");
+        sb.append("<urlChave>").append(escape(nfce.getConsultaUrl())).append("</urlChave>");
+        sb.append("</infNFeSupl>");
         return sb.toString();
     }
 
@@ -87,20 +114,20 @@ public class NfeXmlAssembler {
         sb.append("<cUF>").append(UfMapper.codeFor(issuer.getUf())).append("</cUF>");
         sb.append("<cNF>").append(cNF).append("</cNF>");
         sb.append("<natOp>").append(escape(request.getNatureOperation())).append("</natOp>");
-        sb.append("<mod>55</mod>");
+        sb.append("<mod>").append(properties.getModelo()).append("</mod>");
         sb.append("<serie>").append(escape(properties.getSerie())).append("</serie>");
         sb.append("<nNF>").append(nNF).append("</nNF>");
         sb.append("<dhEmi>").append(ISO_FMT.format(issueDate)).append("</dhEmi>");
         sb.append("<tpNF>1</tpNF>");
         sb.append("<idDest>1</idDest>");
         sb.append("<cMunFG>").append(escape(issuer.getMunicipioCodigo())).append("</cMunFG>");
-        sb.append("<tpImp>1</tpImp>");
+        sb.append("<tpImp>").append(isNFCe() ? "4" : "1").append("</tpImp>");
         sb.append("<tpEmis>1</tpEmis>");
         sb.append("<cDV>").append(cDV).append("</cDV>");
         sb.append("<tpAmb>").append(properties.getAmbiente()).append("</tpAmb>");
         sb.append("<finNFe>1</finNFe>");
         sb.append("<indFinal>1</indFinal>");
-        sb.append("<indPres>0</indPres>");
+        sb.append("<indPres>").append(isNFCe() ? "1" : "0").append("</indPres>");
         sb.append("<procEmi>0</procEmi>");
         sb.append("<verProc>").append(escape(properties.getProcessoVersao())).append("</verProc>");
         sb.append("</ide>");

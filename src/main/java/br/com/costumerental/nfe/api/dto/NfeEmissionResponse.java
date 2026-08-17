@@ -24,4 +24,6 @@ public class NfeEmissionResponse implements Serializable {
     private String statusMessage;
     private String authorizedXml;
     private String signedXml;
+    private String qrCode;
+    private String consultaUrl;
 }

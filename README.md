@@ -1,6 +1,18 @@
 # costume-rental-nfe
 
-Microserviço Spring Boot para emissão e eventos de NF-e (modelo 55) usando a biblioteca [Java_NFe](https://github.com/Samuel-Oliveira/Java_NFe).
+Microserviço Spring Boot para emissão e eventos de NF-e (modelo 55) e NFC-e (modelo 65) usando a biblioteca [Java_NFe](https://github.com/Samuel-Oliveira/Java_NFe).
+
+## NFC-e (modelo 65)
+
+Defina `NFE_MODELO=65` para emitir NFC-e em vez de NF-e. Nesse modo sao obrigatorias as URLs de QRCode e consulta por chave do estado do emitente (secoes `NFCe_<UF>_H`/`NFCe_<UF>_P` do `WebServicesNfe.ini` da Java_NFe):
+
+```bash
+export NFE_MODELO=65
+export NFE_NFCE_QRCODE_URL=https://www.homologacao.nfce.fazenda.sp.gov.br/qrcode
+export NFE_NFCE_CONSULTA_URL=https://www.homologacao.nfce.fazenda.sp.gov.br/consulta
+```
+
+O QRCode (padrao V3 online, NT 2025-001) e a URL de consulta sao embutidos no XML antes da assinatura e retornados em `qrCode`/`consultaUrl` na resposta de `/api/v1/nfe/emit`.
 
 ## Fase atual
 

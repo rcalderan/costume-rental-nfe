@@ -1,5 +1,6 @@
 package br.com.costumerental.nfe.infrastructure.sefaz;
 
+import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.swconsultoria.nfe.Nfe;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.dom.enuns.ConsultaDFeEnum;
@@ -34,36 +35,47 @@ public class NfeLibraryAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(NfeLibraryAdapter.class);
 
+    private final NfeProperties properties;
+
+    public NfeLibraryAdapter(NfeProperties properties) {
+        this.properties = properties;
+    }
+
     public TEnviNFe signAndValidate(ConfiguracoesNfe config, TEnviNFe enviNFe) throws NfeException {
         return withMdc("signAndValidate", null, () -> Nfe.montaNfe(config, enviNFe, true));
     }
 
     public TRetEnviNFe send(ConfiguracoesNfe config, TEnviNFe signedEnviNFe) throws NfeException {
         String chave = extractAccessKey(signedEnviNFe);
-        TRetEnviNFe ret = withMdc("enviarNfe", chave, () -> Nfe.enviarNfe(config, signedEnviNFe, DocumentoEnum.NFE));
+        DocumentoEnum tipoDocumento = DocumentoEnumResolver.fromAccessKey(chave);
+        TRetEnviNFe ret = withMdc("enviarNfe", chave, () -> Nfe.enviarNfe(config, signedEnviNFe, tipoDocumento));
         logSefazResponse(ret.getCStat(), ret.getXMotivo());
         return ret;
     }
 
     public TRetConsStatServ statusServico(ConfiguracoesNfe config) throws NfeException {
-        TRetConsStatServ ret = withMdc("statusServico", null, () -> Nfe.statusServico(config, DocumentoEnum.NFE));
+        DocumentoEnum tipoDocumento = configuredDocumentType();
+        TRetConsStatServ ret = withMdc("statusServico", null, () -> Nfe.statusServico(config, tipoDocumento));
         logSefazResponse(ret.getCStat(), ret.getXMotivo());
         return ret;
     }
 
     public TRetConsSitNFe consultarXml(ConfiguracoesNfe config, String chaveAcesso) throws NfeException {
-        TRetConsSitNFe ret = withMdc("consultarXml", chaveAcesso, () -> Nfe.consultaXml(config, chaveAcesso, DocumentoEnum.NFE));
+        DocumentoEnum tipoDocumento = DocumentoEnumResolver.fromAccessKey(chaveAcesso);
+        TRetConsSitNFe ret = withMdc("consultarXml", chaveAcesso, () -> Nfe.consultaXml(config, chaveAcesso, tipoDocumento));
         logSefazResponse(ret.getCStat(), ret.getXMotivo());
         return ret;
     }
 
     public TRetConsReciNFe consultarRecibo(ConfiguracoesNfe config, String numeroRecibo) throws NfeException {
-        return withMdc("consultarRecibo", null, () -> Nfe.consultaRecibo(config, numeroRecibo, DocumentoEnum.NFE));
+        DocumentoEnum tipoDocumento = configuredDocumentType();
+        return withMdc("consultarRecibo", null, () -> Nfe.consultaRecibo(config, numeroRecibo, tipoDocumento));
     }
 
     public br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEnvEvento cancelarNfe(ConfiguracoesNfe config,
                                                                                      br.com.swconsultoria.nfe.schema.envEventoCancNFe.TEnvEvento envEvento) throws NfeException {
-        return withMdc("cancelarNfe", null, () -> Nfe.cancelarNfe(config, envEvento, true, DocumentoEnum.NFE));
+        DocumentoEnum tipoDocumento = DocumentoEnumResolver.fromAccessKey(chaveFrom(envEvento));
+        return withMdc("cancelarNfe", null, () -> Nfe.cancelarNfe(config, envEvento, true, tipoDocumento));
     }
 
     public br.com.swconsultoria.nfe.schema.envcce.TRetEnvEvento cartaCorrecao(ConfiguracoesNfe config,
@@ -77,7 +89,8 @@ public class NfeLibraryAdapter {
     }
 
     public TRetInutNFe inutilizacao(ConfiguracoesNfe config, TInutNFe inutNFe) throws NfeException {
-        return withMdc("inutilizacao", null, () -> Nfe.inutilizacao(config, inutNFe, DocumentoEnum.NFE, true));
+        DocumentoEnum tipoDocumento = DocumentoEnumResolver.fromModelo(inutNFe.getInfInut().getMod());
+        return withMdc("inutilizacao", null, () -> Nfe.inutilizacao(config, inutNFe, tipoDocumento, true));
     }
 
     public TRetConsCad consultaCadastro(ConfiguracoesNfe config, PessoaEnum tipoPessoa, String cnpjCpf,
@@ -141,6 +154,14 @@ public class NfeLibraryAdapter {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String chaveFrom(br.com.swconsultoria.nfe.schema.envEventoCancNFe.TEnvEvento envEvento) {
+        return envEvento.getEvento().get(0).getInfEvento().getChNFe();
+    }
+
+    private DocumentoEnum configuredDocumentType() {
+        return DocumentoEnumResolver.fromModelo(properties.getModelo());
     }
 
     @FunctionalInterface

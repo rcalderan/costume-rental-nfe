@@ -19,6 +19,11 @@ public class NfeResponseMapper {
     }
 
     public NfeEmissionResponse map(TRetEnviNFe retEnviNFe, String signedXml, String authorizedXml) {
+        return map(retEnviNFe, signedXml, authorizedXml, null, null);
+    }
+
+    public NfeEmissionResponse map(TRetEnviNFe retEnviNFe, String signedXml, String authorizedXml,
+                                    String qrCode, String consultaUrl) {
         TProtNFe.InfProt infProt = infProt(retEnviNFe);
         String cStat = infProt != null ? infProt.getCStat() : retEnviNFe.getCStat();
         String xMotivo = infProt != null ? infProt.getXMotivo() : retEnviNFe.getXMotivo();
@@ -36,6 +41,8 @@ public class NfeResponseMapper {
                 .statusMessage(xMotivo)
                 .signedXml(signedXml)
                 .authorizedXml(authorizedXml)
+                .qrCode(qrCode)
+                .consultaUrl(consultaUrl)
                 .build();
     }
 

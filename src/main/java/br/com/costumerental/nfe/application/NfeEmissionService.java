@@ -63,7 +63,10 @@ public class NfeEmissionService {
             String authorizedXml = responseMapper.isAuthorized(retorno)
                     ? libraryAdapter.buildNfeProc(signedEnviNFe, retorno)
                     : null;
-            NfeEmissionResponse response = responseMapper.map(retorno, signedXml, authorizedXml);
+            TNFe.InfNFeSupl infNFeSupl = signedEnviNFe.getNFe().get(0).getInfNFeSupl();
+            String qrCode = infNFeSupl != null ? infNFeSupl.getQrCode() : null;
+            String consultaUrl = infNFeSupl != null ? infNFeSupl.getUrlChave() : null;
+            NfeEmissionResponse response = responseMapper.map(retorno, signedXml, authorizedXml, qrCode, consultaUrl);
             fillNumberAndSeries(response, signedEnviNFe);
             fiscalDocumentService.updateAfterSefaz(document, response);
             return response;

@@ -36,7 +36,7 @@ public class AccessKeyGenerator {
         String ufCode = UfMapper.codeFor(issuer.getUf());
         String aamm = AAMM.format(issueDate);
         String cnpj = digitsOnly(issuer.getCnpj(), 14);
-        String mod = "55";
+        String mod = properties.getModelo();
         String seriePadded = leftPad(serie, 3, '0');
         String nNF = leftPad(invoiceNumber, 9, '0');
 
@@ -49,7 +49,7 @@ public class AccessKeyGenerator {
         String ufCode = UfMapper.codeFor(properties.getEmit().getUf());
         String aamm = AAMM.format(issueDate);
         String cnpj = digitsOnly(properties.getEmit().getCnpj(), 14);
-        String mod = "55";
+        String mod = properties.getModelo();
         String seriePadded = leftPad(serie, 3, '0');
         String nNF = leftPad(invoiceNumber, 9, '0');
 

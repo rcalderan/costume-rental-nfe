@@ -27,6 +27,10 @@ class NfeXmlAssemblerTest {
     }
 
     private NfeXmlAssembler createAssembler() {
+        return createAssembler("55");
+    }
+
+    private NfeXmlAssembler createAssembler(String modelo) {
         NfeProperties properties = new NfeProperties();
         NfeProperties.EmitProperties emit = new NfeProperties.EmitProperties();
         emit.setCrt("1");
@@ -35,8 +39,14 @@ class NfeXmlAssemblerTest {
         properties.setEmit(emit);
         properties.setAmbiente("2");
         properties.setSerie("1");
-        properties.setModelo("55");
+        properties.setModelo(modelo);
         properties.setProcessoVersao("1.0");
+        if ("65".equals(modelo)) {
+            NfeProperties.NfceProperties nfce = new NfeProperties.NfceProperties();
+            nfce.setQrcodeUrl("https://www.homologacao.nfce.fazenda.sp.gov.br/qrcode");
+            nfce.setConsultaUrl("https://www.homologacao.nfce.fazenda.sp.gov.br/consulta");
+            properties.setNfce(nfce);
+        }
         AccessKeyGenerator accessKeyGenerator = new AccessKeyGenerator(properties);
         IbgeCityCodeResolver cityCodeResolver = new IbgeCityCodeResolver();
         return new NfeXmlAssembler(properties, accessKeyGenerator, cityCodeResolver);
@@ -113,6 +123,56 @@ class NfeXmlAssemblerTest {
         String xml = assembler.buildXmlString(request, filial);
         assertThat(xml).contains("<CNPJ>00000000000282</CNPJ>");
         assertThat(xml).contains("Emitente Homologacao");
+    }
+
+    @Test
+    void shouldBuildNfceWithModel65TpImp4AndIndPres1() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<mod>65</mod>");
+        assertThat(xml).contains("<tpImp>4</tpImp>");
+        assertThat(xml).contains("<indPres>1</indPres>");
+    }
+
+    @Test
+    void shouldIncludeInfNFeSupplWithQrCodeForNfce() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<infNFeSupl>");
+        assertThat(xml).contains("<qrCode>");
+        assertThat(xml).contains("|3|2");
+        assertThat(xml).contains("<urlChave>https://www.homologacao.nfce.fazenda.sp.gov.br/consulta</urlChave>");
+    }
+
+    @Test
+    void shouldFailNfceWithoutQrCodeConfiguration() {
+        NfeProperties properties = missingNfceProperties();
+        NfeXmlAssembler nfceAssembler = new NfeXmlAssembler(properties, new AccessKeyGenerator(properties),
+                new IbgeCityCodeResolver());
+        NfeEmissionRequest request = sampleRequest();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> nfceAssembler.buildXmlString(request, issuer))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("nfe.nfce.qrcode-url");
+    }
+
+    private NfeProperties missingNfceProperties() {
+        NfeProperties properties = new NfeProperties();
+        NfeProperties.EmitProperties emit = new NfeProperties.EmitProperties();
+        emit.setCrt("1");
+        emit.setEndereco(new NfeProperties.EnderecoProperties());
+        properties.setEmit(emit);
+        properties.setAmbiente("2");
+        properties.setSerie("1");
+        properties.setModelo("65");
+        properties.setProcessoVersao("1.0");
+        return properties;
     }
 
     private NfeEmissionRequest sampleRequest() {
