@@ -25,7 +25,6 @@ public class NfeEmissionRequest implements Serializable {
     @Valid
     private List<NfeItemRequest> items;
 
-    @NotNull(message = "Dados do destinatario sao obrigatorios")
     @Valid
     private CustomerInfo customer;
 
@@ -45,4 +44,7 @@ public class NfeEmissionRequest implements Serializable {
      * modelo 65; para NF-e o valor e ignorado. Padrao: true.
      */
     private Boolean printReceipt;
+
+    @Valid
+    private PaymentInfo payment;
 }

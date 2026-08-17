@@ -3,6 +3,7 @@ package br.com.costumerental.nfe.xml;
 import br.com.costumerental.nfe.api.dto.CustomerInfo;
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
+import br.com.costumerental.nfe.api.dto.PaymentInfo;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
@@ -19,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Component
@@ -65,7 +67,11 @@ public class NfeXmlAssembler {
         sb.append("<infNFe Id=\"NFe").append(accessKey).append("\" versao=\"4.00\">");
         sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer));
         sb.append(buildEmit(issuer));
-        sb.append(buildDest(request.getCustomer()));
+        if (request.getCustomer() != null) {
+            sb.append(buildDest(request.getCustomer()));
+        } else if (!isNFCe()) {
+            throw new IllegalArgumentException("Dados do destinatario sao obrigatorios para NF-e (modelo 55)");
+        }
 
         int itemNumber = 1;
         for (NfeItemRequest item : request.getItems()) {
@@ -77,7 +83,7 @@ public class NfeXmlAssembler {
         if (!isNFCe()) {
             sb.append(buildCobr(invoiceNumber, request.getItems()));
         }
-        sb.append(buildPag(request.getItems()));
+        sb.append(buildPag(request));
         sb.append("</infNFe>");
         if (isNFCe()) {
             sb.append(buildInfNFeSupl(accessKey));
@@ -348,15 +354,70 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildPag(List<NfeItemRequest> items) {
-        BigDecimal vPag = totalProducts(items);
+    private String buildPag(NfeEmissionRequest request) {
+        BigDecimal total = totalProducts(request.getItems());
+        PaymentInfo payment = request.getPayment();
+
+        String tPag;
+        BigDecimal vPag;
+        if (payment == null) {
+            tPag = "01";
+            vPag = total;
+            payment = PaymentInfo.builder().tPag(tPag).vPag(vPag).build();
+        } else {
+            tPag = payment.getTPag();
+            vPag = payment.getVPag();
+            if (tPag == null || tPag.isBlank()) {
+                throw new IllegalArgumentException("tPag da forma de pagamento e obrigatorio");
+            }
+            validateTpag(tPag);
+            if (vPag == null && !"90".equals(tPag)) {
+                vPag = total;
+            }
+        }
+
         StringBuilder sb = new StringBuilder();
         sb.append("<pag>");
         sb.append("<detPag>");
-        sb.append("<tPag>01</tPag>");
-        sb.append("<vPag>").append(formatDecimal(vPag)).append("</vPag>");
+        if (hasText(payment.getIndPag())) {
+            sb.append("<indPag>").append(escape(payment.getIndPag())).append("</indPag>");
+        }
+        sb.append("<tPag>").append(escape(tPag)).append("</tPag>");
+        if (vPag != null) {
+            sb.append("<vPag>").append(formatDecimal(vPag)).append("</vPag>");
+        }
+        if (hasText(payment.getTpIntegra())) {
+            sb.append(buildCard(payment));
+        }
         sb.append("</detPag>");
+        if (payment.getVTroco() != null) {
+            sb.append("<vTroco>").append(formatDecimal(payment.getVTroco())).append("</vTroco>");
+        }
         sb.append("</pag>");
+        return sb.toString();
+    }
+
+    private void validateTpag(String tPag) {
+        if (!Set.of("01", "02", "03", "04", "05", "10", "11", "12", "13", "14", "15", "90", "99").contains(tPag)) {
+            throw new IllegalArgumentException("tPag invalido: " + tPag
+                    + ". Valores aceitos: 01,02,03,04,05,10,11,12,13,14,15,90,99");
+        }
+    }
+
+    private String buildCard(PaymentInfo payment) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<card>");
+        sb.append("<tpIntegra>").append(escape(payment.getTpIntegra())).append("</tpIntegra>");
+        if (hasText(payment.getCnpjCredenciadora())) {
+            sb.append("<CNPJ>").append(digitsOnly(payment.getCnpjCredenciadora())).append("</CNPJ>");
+        }
+        if (hasText(payment.getTBand())) {
+            sb.append("<tBand>").append(escape(payment.getTBand())).append("</tBand>");
+        }
+        if (hasText(payment.getCAut())) {
+            sb.append("<cAut>").append(escape(payment.getCAut())).append("</cAut>");
+        }
+        sb.append("</card>");
         return sb.toString();
     }
 

@@ -3,6 +3,7 @@ package br.com.costumerental.nfe.xml;
 import br.com.costumerental.nfe.api.dto.CustomerInfo;
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
+import br.com.costumerental.nfe.api.dto.PaymentInfo;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.NfeIssuer;
@@ -134,6 +135,28 @@ class NfeXmlAssemblerTest {
     }
 
     @Test
+    void shouldBuildNfceWithoutCustomer() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = NfeEmissionRequest.builder()
+                .natureOperation("Venda de mercadoria")
+                .items(List.of(NfeItemRequest.builder()
+                        .productCode("PROD-001")
+                        .description("Produto de teste")
+                        .ncm("99999999")
+                        .cfop("5102")
+                        .unit("UN")
+                        .quantity(BigDecimal.ONE)
+                        .unitValue(new BigDecimal("10.00"))
+                        .build()))
+                .build();
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).doesNotContain("<dest>");
+        assertThat(xml).contains("<mod>65</mod>");
+    }
+
+    @Test
     void shouldBuildNfceWithModel65TpImp4AndIndPres1() {
         NfeXmlAssembler nfceAssembler = createAssembler("65");
         NfeEmissionRequest request = sampleRequest();
@@ -156,6 +179,68 @@ class NfeXmlAssemblerTest {
 
         assertThat(xml).contains("<tpImp>5</tpImp>");
         assertThat(xml).doesNotContain("<cobr>");
+    }
+
+    @Test
+    void shouldBuildNfceWithCardPayment() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+        request.setPayment(PaymentInfo.builder()
+                .tPag("03")
+                .vPag(new BigDecimal("10.00"))
+                .indPag("0")
+                .tpIntegra("2")
+                .tBand("02")
+                .cAut("123456")
+                .build());
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<tPag>03</tPag>");
+        assertThat(xml).contains("<indPag>0</indPag>");
+        assertThat(xml).contains("<vPag>10.00</vPag>");
+        assertThat(xml).contains("<card>");
+        assertThat(xml).contains("<tpIntegra>2</tpIntegra>");
+        assertThat(xml).contains("<tBand>02</tBand>");
+        assertThat(xml).contains("<cAut>123456</cAut>");
+    }
+
+    @Test
+    void shouldBuildNfceWithTroco() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+        request.setPayment(PaymentInfo.builder()
+                .tPag("01")
+                .vPag(new BigDecimal("10.00"))
+                .vTroco(new BigDecimal("2.50"))
+                .build());
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<vTroco>2.50</vTroco>");
+    }
+
+    @Test
+    void shouldBuildNfceWithSemPagamento() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+        request.setPayment(PaymentInfo.builder().tPag("90").build());
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<tPag>90</tPag>");
+        assertThat(xml).doesNotContain("<vPag>");
+    }
+
+    @Test
+    void shouldRejectInvalidTpag() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+        request.setPayment(PaymentInfo.builder().tPag("17").build());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> nfceAssembler.buildXmlString(request, issuer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("tPag invalido");
     }
 
     @Test
