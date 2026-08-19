@@ -1,8 +1,8 @@
 package br.com.costumerental.nfe.xml;
 
 import br.com.costumerental.nfe.api.dto.NfeEmissionResponse;
-import br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TRetConsReciNFe;
-import br.com.swconsultoria.nfe.schema_4.retConsSitNFe.TRetConsSitNFe;
+import br.com.swconsultoria.nfe.schema_4.consReciNFe.TRetConsReciNFe;
+import br.com.swconsultoria.nfe.schema_4.consSitNFe.TRetConsSitNFe;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -31,8 +31,8 @@ public class NfeConsultaResponseMapper {
     }
 
     public NfeEmissionResponse mapRecibo(TRetConsReciNFe retorno) {
-        List<br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TProtNFe> protocolos = retorno.getProtNFe();
-        br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TProtNFe.InfProt infProt =
+        List<br.com.swconsultoria.nfe.schema_4.consReciNFe.TProtNFe> protocolos = retorno.getProtNFe();
+        br.com.swconsultoria.nfe.schema_4.consReciNFe.TProtNFe.InfProt infProt =
                 protocolos != null && !protocolos.isEmpty() ? protocolos.get(0).getInfProt() : null;
 
         String accessKey = infProt != null ? infProt.getChNFe() : null;

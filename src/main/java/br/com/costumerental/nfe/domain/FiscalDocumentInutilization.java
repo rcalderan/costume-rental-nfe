@@ -51,7 +51,7 @@ public class FiscalDocumentInutilization {
     @Column(nullable = false, length = 255)
     private String justification;
 
-    @Column(name = "sefaz_status_code", length = 3)
+    @Column(name = "sefaz_status_code", length = 4)
     private String sefazStatusCode;
 
     @OneToOne(fetch = FetchType.LAZY)

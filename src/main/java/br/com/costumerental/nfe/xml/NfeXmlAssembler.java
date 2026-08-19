@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 
 import static org.springframework.util.StringUtils.hasText;
 
-import javax.xml.bind.JAXBException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -31,6 +30,7 @@ public class NfeXmlAssembler {
     private static final Pattern LONG_DASHES = Pattern.compile("[\\u2011\\u2013\\u2014]");
     private static final Pattern OUTSIDE_NFE_RANGE = Pattern.compile("[^\\x20-\\xFF]");
     private static final String XNOME_DEST_HOMOLOGACAO = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
+    private static final String XPROD_HOMOLOGACAO = "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
 
     private final NfeProperties properties;
     private final AccessKeyGenerator accessKeyGenerator;
@@ -44,18 +44,15 @@ public class NfeXmlAssembler {
 
     public TEnviNFe build(NfeEmissionRequest request, NfeIssuer issuer) {
         String xml = buildXmlString(request, issuer);
-        try {
-            return XmlNfeUtil.xmlToObject(xml, TEnviNFe.class);
-        } catch (JAXBException e) {
-            throw new IllegalStateException("Falha ao converter XML da NF-e para objeto: " + e.getMessage(), e);
-        }
+        return XmlNfeUtil.xmlToObject(xml, TEnviNFe.class);
     }
 
     String buildXmlString(NfeEmissionRequest request, NfeIssuer issuer) {
         OffsetDateTime issueDate = OffsetDateTime.now(ZoneId.of("America/Sao_Paulo"));
         String invoiceNumber = accessKeyGenerator.generateInvoiceNumber();
         String cnf = accessKeyGenerator.generateCNF();
-        String accessKey = accessKeyGenerator.generate(issueDate, issuer, properties.getSerie(), invoiceNumber, cnf);
+        String modelo = resolveModelo(request);
+        String accessKey = accessKeyGenerator.generate(issueDate, issuer, modelo, properties.getSerie(), invoiceNumber, cnf);
         String cDV = accessKey.substring(accessKey.length() - 1);
 
         StringBuilder sb = new StringBuilder();
@@ -68,24 +65,30 @@ public class NfeXmlAssembler {
         sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer));
         sb.append(buildEmit(issuer));
         if (request.getCustomer() != null) {
+            if (isNFCe(request) && !request.getCustomer().getState().equalsIgnoreCase(issuer.getUf())) {
+                throw new IllegalArgumentException(
+                        "NFC-e so pode ser emitida para consumidor do mesmo estado do emitente. "
+                                + "UF do consumidor: " + request.getCustomer().getState()
+                                + ", UF do emitente: " + issuer.getUf());
+            }
             sb.append(buildDest(request.getCustomer()));
-        } else if (!isNFCe()) {
+        } else if (!isNFCe(request)) {
             throw new IllegalArgumentException("Dados do destinatario sao obrigatorios para NF-e (modelo 55)");
         }
 
         int itemNumber = 1;
         for (NfeItemRequest item : request.getItems()) {
-            sb.append(buildDet(item, itemNumber++, issuer));
+            sb.append(buildDet(item, itemNumber++, issuer, request));
         }
 
-        sb.append(buildTotal(request.getItems()));
+        sb.append(buildTotal(request.getItems(), request));
         sb.append("<transp><modFrete>9</modFrete></transp>");
-        if (!isNFCe()) {
+        if (!isNFCe(request)) {
             sb.append(buildCobr(invoiceNumber, request.getItems()));
         }
         sb.append(buildPag(request));
         sb.append("</infNFe>");
-        if (isNFCe()) {
+        if (isNFCe(request)) {
             sb.append(buildInfNFeSupl(accessKey));
         }
         sb.append("</NFe>");
@@ -93,12 +96,17 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private boolean isNFCe() {
-        return "65".equals(properties.getModelo());
+    private String resolveModelo(NfeEmissionRequest request) {
+        String modelo = request.getModelo();
+        return modelo != null && !modelo.isBlank() ? modelo : properties.getModelo();
+    }
+
+    private boolean isNFCe(NfeEmissionRequest request) {
+        return "65".equals(resolveModelo(request));
     }
 
     private String tpImpForIde(NfeEmissionRequest request) {
-        if (!isNFCe()) {
+        if (!isNFCe(request)) {
             return "1";
         }
         return Boolean.FALSE.equals(request.getPrintReceipt()) ? "5" : "4";
@@ -129,7 +137,7 @@ public class NfeXmlAssembler {
         sb.append("<cUF>").append(UfMapper.codeFor(issuer.getUf())).append("</cUF>");
         sb.append("<cNF>").append(cNF).append("</cNF>");
         sb.append("<natOp>").append(escape(request.getNatureOperation())).append("</natOp>");
-        sb.append("<mod>").append(properties.getModelo()).append("</mod>");
+        sb.append("<mod>").append(escape(resolveModelo(request))).append("</mod>");
         sb.append("<serie>").append(escape(properties.getSerie())).append("</serie>");
         sb.append("<nNF>").append(nNF).append("</nNF>");
         sb.append("<dhEmi>").append(ISO_FMT.format(issueDate)).append("</dhEmi>");
@@ -142,7 +150,7 @@ public class NfeXmlAssembler {
         sb.append("<tpAmb>").append(properties.getAmbiente()).append("</tpAmb>");
         sb.append("<finNFe>1</finNFe>");
         sb.append("<indFinal>1</indFinal>");
-        sb.append("<indPres>").append(isNFCe() ? "1" : "0").append("</indPres>");
+        sb.append("<indPres>").append(isNFCe(request) ? "1" : "0").append("</indPres>");
         sb.append("<procEmi>0</procEmi>");
         sb.append("<verProc>").append(escape(properties.getProcessoVersao())).append("</verProc>");
         sb.append("</ide>");
@@ -216,7 +224,7 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildDet(NfeItemRequest item, int itemNumber, NfeIssuer issuer) {
+    private String buildDet(NfeItemRequest item, int itemNumber, NfeIssuer issuer, NfeEmissionRequest request) {
         BigDecimal qCom = round(item.getQuantity(), 4);
         BigDecimal vUnCom = round(item.getUnitValue(), 10);
         BigDecimal vProd = round(qCom.multiply(vUnCom), 2);
@@ -226,7 +234,10 @@ public class NfeXmlAssembler {
         sb.append("<prod>");
         sb.append("<cProd>").append(escape(item.getProductCode())).append("</cProd>");
         sb.append("<cEAN>SEM GTIN</cEAN>");
-        sb.append("<xProd>").append(escape(item.getDescription())).append("</xProd>");
+        String xProd = isFirstItemHomologacaoNfce(itemNumber, request)
+                ? XPROD_HOMOLOGACAO
+                : escape(item.getDescription());
+        sb.append("<xProd>").append(xProd).append("</xProd>");
         sb.append("<NCM>").append(escape(item.getNcm())).append("</NCM>");
         sb.append("<CFOP>").append(escape(item.getCfop())).append("</CFOP>");
         sb.append("<uCom>").append(escape(item.getUnit())).append("</uCom>");
@@ -241,15 +252,22 @@ public class NfeXmlAssembler {
         sb.append("</prod>");
         sb.append("<imposto>");
         sb.append("<vTotTrib>0.00</vTotTrib>");
-        sb.append(buildIcms(issuer));
+        sb.append(buildIcms(issuer, request));
         sb.append(buildPis(issuer));
         sb.append(buildCofins(issuer));
+        if (isNFCe(request)) {
+            sb.append(NfeIbsCbsXmlBuilder.buildItem(item));
+        }
         sb.append("</imposto>");
         sb.append("</det>");
         return sb.toString();
     }
 
-    private String buildIcms(NfeIssuer issuer) {
+    private boolean isFirstItemHomologacaoNfce(int itemNumber, NfeEmissionRequest request) {
+        return itemNumber == 1 && isNFCe(request) && "2".equals(properties.getAmbiente());
+    }
+
+    private String buildIcms(NfeIssuer issuer, NfeEmissionRequest request) {
         StringBuilder sb = new StringBuilder();
         sb.append("<ICMS>");
         if (isRegimeNormal(issuer)) {
@@ -260,7 +278,7 @@ public class NfeXmlAssembler {
         } else {
             sb.append("<ICMSSN102>");
             sb.append("<orig>0</orig>");
-            sb.append("<CSOSN>103</CSOSN>");
+            sb.append("<CSOSN>").append(isNFCe(request) ? "102" : "103").append("</CSOSN>");
             sb.append("</ICMSSN102>");
         }
         sb.append("</ICMS>");
@@ -309,7 +327,7 @@ public class NfeXmlAssembler {
         return "3".equals(issuer.getCrt());
     }
 
-    private String buildTotal(List<NfeItemRequest> items) {
+    private String buildTotal(List<NfeItemRequest> items, NfeEmissionRequest request) {
         BigDecimal vProd = totalProducts(items);
         BigDecimal vNF = vProd;
 
@@ -337,6 +355,9 @@ public class NfeXmlAssembler {
         sb.append("<vNF>").append(formatDecimal(vNF)).append("</vNF>");
         sb.append("<vTotTrib>0.00</vTotTrib>");
         sb.append("</ICMSTot>");
+        if (isNFCe(request)) {
+            sb.append(NfeIbsCbsXmlBuilder.buildTotal(items));
+        }
         sb.append("</total>");
         return sb.toString();
     }

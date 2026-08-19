@@ -170,6 +170,32 @@ class NfeXmlAssemblerTest {
     }
 
     @Test
+    void shouldIncludeIbsCbsForNfce() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+
+        String xml = nfceAssembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<IBSCBS>");
+        assertThat(xml).contains("<CST>000</CST>");
+        assertThat(xml).contains("<cClassTrib>000001</cClassTrib>");
+        assertThat(xml).contains("<gIBSCBS>");
+        assertThat(xml).contains("<gCBS>");
+        assertThat(xml).contains("<IBSCBSTot>");
+        assertThat(xml).contains("<vBCIBSCBS>10.00</vBCIBSCBS>");
+    }
+
+    @Test
+    void shouldNotIncludeIbsCbsForNfeModel55() {
+        NfeEmissionRequest request = sampleRequest();
+
+        String xml = assembler.buildXmlString(request, issuer);
+
+        assertThat(xml).doesNotContain("<IBSCBS>");
+        assertThat(xml).doesNotContain("<IBSCBSTot>");
+    }
+
+    @Test
     void shouldBuildNfceWithTpImp5ForMensagemEletronica() {
         NfeXmlAssembler nfceAssembler = createAssembler("65");
         NfeEmissionRequest request = sampleRequest();

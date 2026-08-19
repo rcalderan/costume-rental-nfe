@@ -3,9 +3,9 @@ package br.com.costumerental.nfe.xml;
 import br.com.costumerental.nfe.api.dto.NfeEmissionResponse;
 import br.com.costumerental.nfe.domain.NfeStatus;
 import br.com.costumerental.nfe.repository.SefazStatusRepository;
-import br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TRetConsReciNFe;
-import br.com.swconsultoria.nfe.schema_4.retConsSitNFe.TProtNFe;
-import br.com.swconsultoria.nfe.schema_4.retConsSitNFe.TRetConsSitNFe;
+import br.com.swconsultoria.nfe.schema_4.consReciNFe.TRetConsReciNFe;
+import br.com.swconsultoria.nfe.schema_4.consSitNFe.TProtNFe;
+import br.com.swconsultoria.nfe.schema_4.consSitNFe.TRetConsSitNFe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,10 +66,10 @@ class NfeConsultaResponseMapperTest {
         retorno.setXMotivo("Lote processado");
         retorno.setNRec("351000000000000");
 
-        br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TProtNFe protNFe =
-                new br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TProtNFe();
-        br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TProtNFe.InfProt infProt =
-                new br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TProtNFe.InfProt();
+        br.com.swconsultoria.nfe.schema_4.consReciNFe.TProtNFe protNFe =
+                new br.com.swconsultoria.nfe.schema_4.consReciNFe.TProtNFe();
+        br.com.swconsultoria.nfe.schema_4.consReciNFe.TProtNFe.InfProt infProt =
+                new br.com.swconsultoria.nfe.schema_4.consReciNFe.TProtNFe.InfProt();
         infProt.setChNFe("35260800000000000000550010000000011000000010");
         infProt.setNProt("135260000000000");
         protNFe.setInfProt(infProt);

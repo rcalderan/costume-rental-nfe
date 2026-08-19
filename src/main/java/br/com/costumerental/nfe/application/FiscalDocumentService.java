@@ -73,6 +73,7 @@ public class FiscalDocumentService {
 
     @Transactional
     public void updateAfterSefaz(FiscalDocument document, NfeEmissionResponse response) {
+        validateResponseForPersistence(response);
         document.setStatus(statusEntity(response.getStatus()));
         statusCodeResolver.upsertSefazStatus(response.getStatusCode(), response.getStatusMessage());
         document.setSefazStatusCode(response.getStatusCode());
@@ -83,6 +84,19 @@ public class FiscalDocumentService {
             document.setAuthorizedXml(authorizedXmlEntity);
         }
         repository.save(document);
+    }
+
+    private void validateResponseForPersistence(NfeEmissionResponse response) {
+        if (response.getStatusCode() != null && response.getStatusCode().length() > 4) {
+            throw new IllegalArgumentException(
+                    "statusCode excede 4 caracteres (tamanho=" + response.getStatusCode().length()
+                            + ", valor='" + response.getStatusCode() + "')");
+        }
+        if (response.getProtocol() != null && response.getProtocol().length() > 20) {
+            throw new IllegalArgumentException(
+                    "protocol excede 20 caracteres (tamanho=" + response.getProtocol().length()
+                            + ", valor='" + response.getProtocol() + "')");
+        }
     }
 
     @Transactional

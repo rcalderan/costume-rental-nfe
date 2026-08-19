@@ -9,6 +9,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 import java.util.List;
 
@@ -47,4 +48,11 @@ public class NfeEmissionRequest implements Serializable {
 
     @Valid
     private PaymentInfo payment;
+
+    /**
+     * Modelo do documento fiscal: 55 (NF-e) ou 65 (NFC-e).
+     * Se omitido, usa o valor configurado em nfe.modelo.
+     */
+    @Pattern(regexp = "55|65", message = "Modelo deve ser 55 (NF-e) ou 65 (NFC-e)")
+    private String modelo;
 }

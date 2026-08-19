@@ -32,17 +32,21 @@ public class AccessKeyGenerator {
         this.numberControlService = null;
     }
 
-    public String generate(OffsetDateTime issueDate, NfeIssuer issuer, String serie, String invoiceNumber, String cnf) {
+    public String generate(OffsetDateTime issueDate, NfeIssuer issuer, String modelo, String serie, String invoiceNumber, String cnf) {
         String ufCode = UfMapper.codeFor(issuer.getUf());
         String aamm = AAMM.format(issueDate);
         String cnpj = digitsOnly(issuer.getCnpj(), 14);
-        String mod = properties.getModelo();
+        String mod = resolveModelo(modelo);
         String seriePadded = leftPad(serie, 3, '0');
         String nNF = leftPad(invoiceNumber, 9, '0');
 
         String partial = ufCode + aamm + cnpj + mod + seriePadded + nNF + "1" + cnf;
         int dv = calculateDV(partial);
         return partial + dv;
+    }
+
+    public String generate(OffsetDateTime issueDate, NfeIssuer issuer, String serie, String invoiceNumber, String cnf) {
+        return generate(issueDate, issuer, properties.getModelo(), serie, invoiceNumber, cnf);
     }
 
     public String generate(OffsetDateTime issueDate, String serie, String invoiceNumber, String cnf) {
@@ -56,6 +60,10 @@ public class AccessKeyGenerator {
         String partial = ufCode + aamm + cnpj + mod + seriePadded + nNF + "1" + cnf;
         int dv = calculateDV(partial);
         return partial + dv;
+    }
+
+    private String resolveModelo(String modelo) {
+        return modelo != null && !modelo.isBlank() ? modelo : properties.getModelo();
     }
 
     public String generateCNF() {

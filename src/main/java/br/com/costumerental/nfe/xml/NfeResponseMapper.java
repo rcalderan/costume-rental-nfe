@@ -25,8 +25,8 @@ public class NfeResponseMapper {
     public NfeEmissionResponse map(TRetEnviNFe retEnviNFe, String signedXml, String authorizedXml,
                                     String qrCode, String consultaUrl) {
         TProtNFe.InfProt infProt = infProt(retEnviNFe);
-        String cStat = infProt != null ? infProt.getCStat() : retEnviNFe.getCStat();
-        String xMotivo = infProt != null ? infProt.getXMotivo() : retEnviNFe.getXMotivo();
+        String cStat = sanitizeCStat(infProt != null ? infProt.getCStat() : retEnviNFe.getCStat());
+        String xMotivo = sanitizeXMotivo(infProt != null ? infProt.getXMotivo() : retEnviNFe.getXMotivo());
         String receipt = retEnviNFe.getInfRec() != null ? retEnviNFe.getInfRec().getNRec() : null;
 
         String protocol = infProt != null ? infProt.getNProt() : null;
@@ -48,8 +48,16 @@ public class NfeResponseMapper {
 
     public boolean isAuthorized(TRetEnviNFe retEnviNFe) {
         TProtNFe.InfProt infProt = infProt(retEnviNFe);
-        String cStat = infProt != null ? infProt.getCStat() : retEnviNFe.getCStat();
+        String cStat = sanitizeCStat(infProt != null ? infProt.getCStat() : retEnviNFe.getCStat());
         return statusCodeResolver.isAuthorized(cStat);
+    }
+
+    private String sanitizeCStat(String cStat) {
+        return cStat == null ? null : cStat.trim().replaceAll("\\D", "");
+    }
+
+    private String sanitizeXMotivo(String xMotivo) {
+        return xMotivo == null ? null : xMotivo.trim();
     }
 
     private TProtNFe.InfProt infProt(TRetEnviNFe retEnviNFe) {
