@@ -196,6 +196,27 @@ class NfeXmlAssemblerTest {
     }
 
     @Test
+    void shouldUseIdDest2ForNfeOutOfStateCustomer() {
+        NfeEmissionRequest request = sampleRequest();
+        request.getCustomer().setState("MG");
+
+        String xml = assembler.buildXmlString(request, issuer);
+
+        assertThat(xml).contains("<idDest>2</idDest>");
+    }
+
+    @Test
+    void shouldRejectNfceForOutOfStateCustomerWithBusinessException() {
+        NfeXmlAssembler nfceAssembler = createAssembler("65");
+        NfeEmissionRequest request = sampleRequest();
+        request.getCustomer().setState("MG");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> nfceAssembler.buildXmlString(request, issuer))
+                .isInstanceOf(br.com.costumerental.nfe.exception.NfeBusinessException.class)
+                .hasMessageContaining("NF-e (modelo 55)");
+    }
+
+    @Test
     void shouldBuildNfceWithTpImp5ForMensagemEletronica() {
         NfeXmlAssembler nfceAssembler = createAssembler("65");
         NfeEmissionRequest request = sampleRequest();

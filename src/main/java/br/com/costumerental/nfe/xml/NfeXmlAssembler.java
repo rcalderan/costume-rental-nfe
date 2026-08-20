@@ -6,6 +6,7 @@ import br.com.costumerental.nfe.api.dto.NfeItemRequest;
 import br.com.costumerental.nfe.api.dto.PaymentInfo;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.domain.NfeIssuer;
+import br.com.costumerental.nfe.exception.NfeBusinessException;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
 import br.com.swconsultoria.nfe.util.NFCeUtil;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
@@ -62,18 +63,19 @@ public class NfeXmlAssembler {
         sb.append("<indSinc>1</indSinc>");
         sb.append("<NFe>");
         sb.append("<infNFe Id=\"NFe").append(accessKey).append("\" versao=\"4.00\">");
-        sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer));
+        sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer, request.getCustomer()));
         sb.append(buildEmit(issuer));
         if (request.getCustomer() != null) {
             if (isNFCe(request) && !request.getCustomer().getState().equalsIgnoreCase(issuer.getUf())) {
-                throw new IllegalArgumentException(
+                throw new NfeBusinessException(
                         "NFC-e so pode ser emitida para consumidor do mesmo estado do emitente. "
+                                + "Para cliente de outro estado, utilize NF-e (modelo 55). "
                                 + "UF do consumidor: " + request.getCustomer().getState()
                                 + ", UF do emitente: " + issuer.getUf());
             }
             sb.append(buildDest(request.getCustomer()));
         } else if (!isNFCe(request)) {
-            throw new IllegalArgumentException("Dados do destinatario sao obrigatorios para NF-e (modelo 55)");
+            throw new NfeBusinessException("Dados do destinatario sao obrigatorios para NF-e (modelo 55)");
         }
 
         int itemNumber = 1;
@@ -112,6 +114,13 @@ public class NfeXmlAssembler {
         return Boolean.FALSE.equals(request.getPrintReceipt()) ? "5" : "4";
     }
 
+    private String resolveIdDest(CustomerInfo customer, NfeIssuer issuer) {
+        if (customer == null || customer.getState() == null) {
+            return "1";
+        }
+        return customer.getState().equalsIgnoreCase(issuer.getUf()) ? "1" : "2";
+    }
+
     /**
      * Grupo suplementar exigido para NFC-e (modelo 65): QRCode (padrao V3
      * online, NT 2025-001) e URL de consulta por chave de acesso.
@@ -131,7 +140,7 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildIde(OffsetDateTime issueDate, String nNF, String cNF, String cDV, NfeEmissionRequest request, NfeIssuer issuer) {
+    private String buildIde(OffsetDateTime issueDate, String nNF, String cNF, String cDV, NfeEmissionRequest request, NfeIssuer issuer, CustomerInfo customer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<ide>");
         sb.append("<cUF>").append(UfMapper.codeFor(issuer.getUf())).append("</cUF>");
@@ -142,7 +151,7 @@ public class NfeXmlAssembler {
         sb.append("<nNF>").append(nNF).append("</nNF>");
         sb.append("<dhEmi>").append(ISO_FMT.format(issueDate)).append("</dhEmi>");
         sb.append("<tpNF>1</tpNF>");
-        sb.append("<idDest>1</idDest>");
+        sb.append("<idDest>").append(resolveIdDest(customer, issuer)).append("</idDest>");
         sb.append("<cMunFG>").append(escape(issuer.getMunicipioCodigo())).append("</cMunFG>");
         sb.append("<tpImp>").append(tpImpForIde(request)).append("</tpImp>");
         sb.append("<tpEmis>1</tpEmis>");
