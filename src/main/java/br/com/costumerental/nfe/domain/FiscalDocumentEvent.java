@@ -37,7 +37,7 @@ public class FiscalDocumentEvent {
     @JoinColumn(name = "event_type_id", nullable = false)
     private NfeEventTypeEntity eventType;
 
-    @Column(name = "sefaz_status_code", length = 3)
+    @Column(name = "sefaz_status_code", length = 4)
     private String sefazStatusCode;
 
     @OneToOne(fetch = FetchType.LAZY)

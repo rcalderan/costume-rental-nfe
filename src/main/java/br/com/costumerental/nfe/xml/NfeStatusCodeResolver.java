@@ -12,7 +12,7 @@ public class NfeStatusCodeResolver {
 
     private static final Set<String> AUTHORIZED_CODES = Set.of("100", "102", "135", "136", "150");
     private static final Set<String> CANCELLED_CODES = Set.of("101", "151");
-    private static final String PROCESSING_CODE = "103";
+    private static final Set<String> PROCESSING_CODES = Set.of("103", "104", "105");
 
     private final SefazStatusRepository sefazStatusRepository;
 
@@ -21,32 +21,39 @@ public class NfeStatusCodeResolver {
     }
 
     public boolean isAuthorized(String cStat) {
-        return AUTHORIZED_CODES.contains(cStat);
+        return AUTHORIZED_CODES.contains(sanitizeCStat(cStat));
     }
 
     public NfeStatus resolve(String cStat) {
-        if (cStat == null) {
+        String code = sanitizeCStat(cStat);
+        if (code == null) {
             return NfeStatus.ERROR;
         }
-        if (AUTHORIZED_CODES.contains(cStat)) {
+        if (AUTHORIZED_CODES.contains(code)) {
             return NfeStatus.AUTHORIZED;
         }
-        if (CANCELLED_CODES.contains(cStat)) {
+        if (CANCELLED_CODES.contains(code)) {
             return NfeStatus.CANCELLED;
         }
-        if (PROCESSING_CODE.equals(cStat) || cStat.startsWith("1")) {
+        if (PROCESSING_CODES.contains(code)) {
             return NfeStatus.PROCESSING;
         }
         return NfeStatus.REJECTED;
     }
 
     public void upsertSefazStatus(String cStat, String xMotivo) {
-        if (cStat == null || cStat.isBlank()) {
+        String code = sanitizeCStat(cStat);
+        if (code == null || code.isBlank()) {
             return;
         }
-        if (!sefazStatusRepository.existsById(cStat)) {
-            NfeStatus category = resolve(cStat);
-            sefazStatusRepository.save(new SefazStatus(cStat, xMotivo, category.name()));
+        if (!sefazStatusRepository.existsById(code)) {
+            NfeStatus category = resolve(code);
+            String message = xMotivo != null && xMotivo.length() > 500 ? xMotivo.substring(0, 500) : xMotivo;
+            sefazStatusRepository.save(new SefazStatus(code, message, category.name()));
         }
+    }
+
+    private String sanitizeCStat(String cStat) {
+        return cStat == null ? null : cStat.trim().replaceAll("\\D", "");
     }
 }

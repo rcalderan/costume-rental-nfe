@@ -3,21 +3,24 @@ package br.com.costumerental.nfe.xml;
 import br.com.costumerental.nfe.api.dto.CustomerInfo;
 import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeItemRequest;
+import br.com.costumerental.nfe.api.dto.PaymentInfo;
 import br.com.costumerental.nfe.config.NfeProperties;
 import br.com.costumerental.nfe.domain.NfeIssuer;
+import br.com.costumerental.nfe.exception.NfeBusinessException;
 import br.com.swconsultoria.nfe.schema_4.enviNFe.TEnviNFe;
+import br.com.swconsultoria.nfe.util.NFCeUtil;
 import br.com.swconsultoria.nfe.util.XmlNfeUtil;
 import org.springframework.stereotype.Component;
 
 import static org.springframework.util.StringUtils.hasText;
 
-import javax.xml.bind.JAXBException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Component
@@ -28,6 +31,7 @@ public class NfeXmlAssembler {
     private static final Pattern LONG_DASHES = Pattern.compile("[\\u2011\\u2013\\u2014]");
     private static final Pattern OUTSIDE_NFE_RANGE = Pattern.compile("[^\\x20-\\xFF]");
     private static final String XNOME_DEST_HOMOLOGACAO = "NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
+    private static final String XPROD_HOMOLOGACAO = "NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL";
 
     private final NfeProperties properties;
     private final AccessKeyGenerator accessKeyGenerator;
@@ -41,18 +45,15 @@ public class NfeXmlAssembler {
 
     public TEnviNFe build(NfeEmissionRequest request, NfeIssuer issuer) {
         String xml = buildXmlString(request, issuer);
-        try {
-            return XmlNfeUtil.xmlToObject(xml, TEnviNFe.class);
-        } catch (JAXBException e) {
-            throw new IllegalStateException("Falha ao converter XML da NF-e para objeto: " + e.getMessage(), e);
-        }
+        return XmlNfeUtil.xmlToObject(xml, TEnviNFe.class);
     }
 
     String buildXmlString(NfeEmissionRequest request, NfeIssuer issuer) {
         OffsetDateTime issueDate = OffsetDateTime.now(ZoneId.of("America/Sao_Paulo"));
         String invoiceNumber = accessKeyGenerator.generateInvoiceNumber();
         String cnf = accessKeyGenerator.generateCNF();
-        String accessKey = accessKeyGenerator.generate(issueDate, issuer, properties.getSerie(), invoiceNumber, cnf);
+        String modelo = resolveModelo(request);
+        String accessKey = accessKeyGenerator.generate(issueDate, issuer, modelo, properties.getSerie(), invoiceNumber, cnf);
         String cDV = accessKey.substring(accessKey.length() - 1);
 
         StringBuilder sb = new StringBuilder();
@@ -62,45 +63,103 @@ public class NfeXmlAssembler {
         sb.append("<indSinc>1</indSinc>");
         sb.append("<NFe>");
         sb.append("<infNFe Id=\"NFe").append(accessKey).append("\" versao=\"4.00\">");
-        sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer));
+        sb.append(buildIde(issueDate, invoiceNumber, cnf, cDV, request, issuer, request.getCustomer()));
         sb.append(buildEmit(issuer));
-        sb.append(buildDest(request.getCustomer()));
+        if (request.getCustomer() != null) {
+            if (isNFCe(request) && !request.getCustomer().getState().equalsIgnoreCase(issuer.getUf())) {
+                throw new NfeBusinessException(
+                        "NFC-e so pode ser emitida para consumidor do mesmo estado do emitente. "
+                                + "Para cliente de outro estado, utilize NF-e (modelo 55). "
+                                + "UF do consumidor: " + request.getCustomer().getState()
+                                + ", UF do emitente: " + issuer.getUf());
+            }
+            sb.append(buildDest(request.getCustomer()));
+        } else if (!isNFCe(request)) {
+            throw new NfeBusinessException("Dados do destinatario sao obrigatorios para NF-e (modelo 55)");
+        }
 
         int itemNumber = 1;
         for (NfeItemRequest item : request.getItems()) {
-            sb.append(buildDet(item, itemNumber++));
+            sb.append(buildDet(item, itemNumber++, issuer, request));
         }
 
-        sb.append(buildTotal(request.getItems()));
+        sb.append(buildTotal(request.getItems(), request));
         sb.append("<transp><modFrete>9</modFrete></transp>");
-        sb.append(buildCobr(invoiceNumber, request.getItems()));
-        sb.append(buildPag(request.getItems()));
+        if (!isNFCe(request)) {
+            sb.append(buildCobr(invoiceNumber, request.getItems()));
+        }
+        sb.append(buildPag(request));
         sb.append("</infNFe>");
+        if (isNFCe(request)) {
+            sb.append(buildInfNFeSupl(accessKey));
+        }
         sb.append("</NFe>");
         sb.append("</enviNFe>");
         return sb.toString();
     }
 
-    private String buildIde(OffsetDateTime issueDate, String nNF, String cNF, String cDV, NfeEmissionRequest request, NfeIssuer issuer) {
+    private String resolveModelo(NfeEmissionRequest request) {
+        String modelo = request.getModelo();
+        return modelo != null && !modelo.isBlank() ? modelo : properties.getModelo();
+    }
+
+    private boolean isNFCe(NfeEmissionRequest request) {
+        return "65".equals(resolveModelo(request));
+    }
+
+    private String tpImpForIde(NfeEmissionRequest request) {
+        if (!isNFCe(request)) {
+            return "1";
+        }
+        return Boolean.FALSE.equals(request.getPrintReceipt()) ? "5" : "4";
+    }
+
+    private String resolveIdDest(CustomerInfo customer, NfeIssuer issuer) {
+        if (customer == null || customer.getState() == null) {
+            return "1";
+        }
+        return customer.getState().equalsIgnoreCase(issuer.getUf()) ? "1" : "2";
+    }
+
+    /**
+     * Grupo suplementar exigido para NFC-e (modelo 65): QRCode (padrao V3
+     * online, NT 2025-001) e URL de consulta por chave de acesso.
+     */
+    private String buildInfNFeSupl(String accessKey) {
+        NfeProperties.NfceProperties nfce = properties.getNfce();
+        if (nfce == null || !hasText(nfce.getQrcodeUrl()) || !hasText(nfce.getConsultaUrl())) {
+            throw new IllegalStateException(
+                    "Configuracao de NFC-e incompleta: defina nfe.nfce.qrcode-url e nfe.nfce.consulta-url");
+        }
+        String qrCode = NFCeUtil.getCodeQRCodeV3(accessKey, properties.getAmbiente(), nfce.getQrcodeUrl());
+        StringBuilder sb = new StringBuilder();
+        sb.append("<infNFeSupl>");
+        sb.append("<qrCode><![CDATA[").append(qrCode).append("]]></qrCode>");
+        sb.append("<urlChave>").append(escape(nfce.getConsultaUrl())).append("</urlChave>");
+        sb.append("</infNFeSupl>");
+        return sb.toString();
+    }
+
+    private String buildIde(OffsetDateTime issueDate, String nNF, String cNF, String cDV, NfeEmissionRequest request, NfeIssuer issuer, CustomerInfo customer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<ide>");
         sb.append("<cUF>").append(UfMapper.codeFor(issuer.getUf())).append("</cUF>");
         sb.append("<cNF>").append(cNF).append("</cNF>");
         sb.append("<natOp>").append(escape(request.getNatureOperation())).append("</natOp>");
-        sb.append("<mod>55</mod>");
+        sb.append("<mod>").append(escape(resolveModelo(request))).append("</mod>");
         sb.append("<serie>").append(escape(properties.getSerie())).append("</serie>");
         sb.append("<nNF>").append(nNF).append("</nNF>");
         sb.append("<dhEmi>").append(ISO_FMT.format(issueDate)).append("</dhEmi>");
         sb.append("<tpNF>1</tpNF>");
-        sb.append("<idDest>1</idDest>");
+        sb.append("<idDest>").append(resolveIdDest(customer, issuer)).append("</idDest>");
         sb.append("<cMunFG>").append(escape(issuer.getMunicipioCodigo())).append("</cMunFG>");
-        sb.append("<tpImp>1</tpImp>");
+        sb.append("<tpImp>").append(tpImpForIde(request)).append("</tpImp>");
         sb.append("<tpEmis>1</tpEmis>");
         sb.append("<cDV>").append(cDV).append("</cDV>");
         sb.append("<tpAmb>").append(properties.getAmbiente()).append("</tpAmb>");
         sb.append("<finNFe>1</finNFe>");
         sb.append("<indFinal>1</indFinal>");
-        sb.append("<indPres>0</indPres>");
+        sb.append("<indPres>").append(isNFCe(request) ? "1" : "0").append("</indPres>");
         sb.append("<procEmi>0</procEmi>");
         sb.append("<verProc>").append(escape(properties.getProcessoVersao())).append("</verProc>");
         sb.append("</ide>");
@@ -174,7 +233,7 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildDet(NfeItemRequest item, int itemNumber) {
+    private String buildDet(NfeItemRequest item, int itemNumber, NfeIssuer issuer, NfeEmissionRequest request) {
         BigDecimal qCom = round(item.getQuantity(), 4);
         BigDecimal vUnCom = round(item.getUnitValue(), 10);
         BigDecimal vProd = round(qCom.multiply(vUnCom), 2);
@@ -184,7 +243,10 @@ public class NfeXmlAssembler {
         sb.append("<prod>");
         sb.append("<cProd>").append(escape(item.getProductCode())).append("</cProd>");
         sb.append("<cEAN>SEM GTIN</cEAN>");
-        sb.append("<xProd>").append(escape(item.getDescription())).append("</xProd>");
+        String xProd = isFirstItemHomologacaoNfce(itemNumber, request)
+                ? XPROD_HOMOLOGACAO
+                : escape(item.getDescription());
+        sb.append("<xProd>").append(xProd).append("</xProd>");
         sb.append("<NCM>").append(escape(item.getNcm())).append("</NCM>");
         sb.append("<CFOP>").append(escape(item.getCfop())).append("</CFOP>");
         sb.append("<uCom>").append(escape(item.getUnit())).append("</uCom>");
@@ -199,18 +261,25 @@ public class NfeXmlAssembler {
         sb.append("</prod>");
         sb.append("<imposto>");
         sb.append("<vTotTrib>0.00</vTotTrib>");
-        sb.append(buildIcms());
-        sb.append(buildPis());
-        sb.append(buildCofins());
+        sb.append(buildIcms(issuer, request));
+        sb.append(buildPis(issuer));
+        sb.append(buildCofins(issuer));
+        if (isNFCe(request)) {
+            sb.append(NfeIbsCbsXmlBuilder.buildItem(item));
+        }
         sb.append("</imposto>");
         sb.append("</det>");
         return sb.toString();
     }
 
-    private String buildIcms() {
+    private boolean isFirstItemHomologacaoNfce(int itemNumber, NfeEmissionRequest request) {
+        return itemNumber == 1 && isNFCe(request) && "2".equals(properties.getAmbiente());
+    }
+
+    private String buildIcms(NfeIssuer issuer, NfeEmissionRequest request) {
         StringBuilder sb = new StringBuilder();
         sb.append("<ICMS>");
-        if (isRegimeNormal()) {
+        if (isRegimeNormal(issuer)) {
             sb.append("<ICMS40>");
             sb.append("<orig>0</orig>");
             sb.append("<CST>41</CST>");
@@ -218,17 +287,17 @@ public class NfeXmlAssembler {
         } else {
             sb.append("<ICMSSN102>");
             sb.append("<orig>0</orig>");
-            sb.append("<CSOSN>103</CSOSN>");
+            sb.append("<CSOSN>").append(isNFCe(request) ? "102" : "103").append("</CSOSN>");
             sb.append("</ICMSSN102>");
         }
         sb.append("</ICMS>");
         return sb.toString();
     }
 
-    private String buildPis() {
+    private String buildPis(NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<PIS>");
-        if (isRegimeNormal()) {
+        if (isRegimeNormal(issuer)) {
             sb.append("<PISOutr>");
             sb.append("<CST>49</CST>");
             sb.append("<vBC>0.00</vBC>");
@@ -244,10 +313,10 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildCofins() {
+    private String buildCofins(NfeIssuer issuer) {
         StringBuilder sb = new StringBuilder();
         sb.append("<COFINS>");
-        if (isRegimeNormal()) {
+        if (isRegimeNormal(issuer)) {
             sb.append("<COFINSOutr>");
             sb.append("<CST>49</CST>");
             sb.append("<vBC>0.00</vBC>");
@@ -263,11 +332,11 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private boolean isRegimeNormal() {
-        return "3".equals(properties.getEmit().getCrt());
+    private boolean isRegimeNormal(NfeIssuer issuer) {
+        return "3".equals(issuer.getCrt());
     }
 
-    private String buildTotal(List<NfeItemRequest> items) {
+    private String buildTotal(List<NfeItemRequest> items, NfeEmissionRequest request) {
         BigDecimal vProd = totalProducts(items);
         BigDecimal vNF = vProd;
 
@@ -295,6 +364,9 @@ public class NfeXmlAssembler {
         sb.append("<vNF>").append(formatDecimal(vNF)).append("</vNF>");
         sb.append("<vTotTrib>0.00</vTotTrib>");
         sb.append("</ICMSTot>");
+        if (isNFCe(request)) {
+            sb.append(NfeIbsCbsXmlBuilder.buildTotal(items));
+        }
         sb.append("</total>");
         return sb.toString();
     }
@@ -312,15 +384,70 @@ public class NfeXmlAssembler {
         return sb.toString();
     }
 
-    private String buildPag(List<NfeItemRequest> items) {
-        BigDecimal vPag = totalProducts(items);
+    private String buildPag(NfeEmissionRequest request) {
+        BigDecimal total = totalProducts(request.getItems());
+        PaymentInfo payment = request.getPayment();
+
+        String tPag;
+        BigDecimal vPag;
+        if (payment == null) {
+            tPag = "01";
+            vPag = total;
+            payment = PaymentInfo.builder().tPag(tPag).vPag(vPag).build();
+        } else {
+            tPag = payment.getTPag();
+            vPag = payment.getVPag();
+            if (tPag == null || tPag.isBlank()) {
+                throw new IllegalArgumentException("tPag da forma de pagamento e obrigatorio");
+            }
+            validateTpag(tPag);
+            if (vPag == null && !"90".equals(tPag)) {
+                vPag = total;
+            }
+        }
+
         StringBuilder sb = new StringBuilder();
         sb.append("<pag>");
         sb.append("<detPag>");
-        sb.append("<tPag>01</tPag>");
-        sb.append("<vPag>").append(formatDecimal(vPag)).append("</vPag>");
+        if (hasText(payment.getIndPag())) {
+            sb.append("<indPag>").append(escape(payment.getIndPag())).append("</indPag>");
+        }
+        sb.append("<tPag>").append(escape(tPag)).append("</tPag>");
+        if (vPag != null) {
+            sb.append("<vPag>").append(formatDecimal(vPag)).append("</vPag>");
+        }
+        if (hasText(payment.getTpIntegra())) {
+            sb.append(buildCard(payment));
+        }
         sb.append("</detPag>");
+        if (payment.getVTroco() != null) {
+            sb.append("<vTroco>").append(formatDecimal(payment.getVTroco())).append("</vTroco>");
+        }
         sb.append("</pag>");
+        return sb.toString();
+    }
+
+    private void validateTpag(String tPag) {
+        if (!Set.of("01", "02", "03", "04", "05", "10", "11", "12", "13", "14", "15", "90", "99").contains(tPag)) {
+            throw new IllegalArgumentException("tPag invalido: " + tPag
+                    + ". Valores aceitos: 01,02,03,04,05,10,11,12,13,14,15,90,99");
+        }
+    }
+
+    private String buildCard(PaymentInfo payment) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<card>");
+        sb.append("<tpIntegra>").append(escape(payment.getTpIntegra())).append("</tpIntegra>");
+        if (hasText(payment.getCnpjCredenciadora())) {
+            sb.append("<CNPJ>").append(digitsOnly(payment.getCnpjCredenciadora())).append("</CNPJ>");
+        }
+        if (hasText(payment.getTBand())) {
+            sb.append("<tBand>").append(escape(payment.getTBand())).append("</tBand>");
+        }
+        if (hasText(payment.getCAut())) {
+            sb.append("<cAut>").append(escape(payment.getCAut())).append("</cAut>");
+        }
+        sb.append("</card>");
         return sb.toString();
     }
 

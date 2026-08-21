@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 public class SefazStatus {
 
     @Id
-    @Column(nullable = false, length = 3)
+    @Column(nullable = false, length = 4)
     private String code;
 
     @Column(length = 500)

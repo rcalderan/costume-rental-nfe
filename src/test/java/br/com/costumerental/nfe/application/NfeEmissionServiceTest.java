@@ -89,7 +89,7 @@ class NfeEmissionServiceTest {
         when(infNFe.getId()).thenReturn("NFe123");
         when(nfe.getInfNFe()).thenReturn(infNFe);
 
-        when(configProvider.buildConfig()).thenReturn(config);
+        when(configProvider.buildConfig(issuer)).thenReturn(config);
         when(xmlAssembler.build(request, issuer)).thenReturn(enviNFe);
         when(libraryAdapter.signAndValidate(config, enviNFe)).thenReturn(signedEnviNFe);
         when(libraryAdapter.toXml(signedEnviNFe)).thenReturn(signedXml);
@@ -124,7 +124,7 @@ class NfeEmissionServiceTest {
         when(nfe.getInfNFe()).thenReturn(infNFe);
 
         when(issuerConfigService.findByCnpj("08299621000200")).thenReturn(Optional.of(filial));
-        when(configProvider.buildConfig()).thenReturn(config);
+        when(configProvider.buildConfig(filial)).thenReturn(config);
         when(xmlAssembler.build(request, filial)).thenReturn(enviNFe);
         when(libraryAdapter.signAndValidate(config, enviNFe)).thenReturn(signedEnviNFe);
         when(libraryAdapter.toXml(signedEnviNFe)).thenReturn(signedXml);

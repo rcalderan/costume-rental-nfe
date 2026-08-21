@@ -7,7 +7,7 @@ import br.com.costumerental.nfe.api.dto.NfeInutilizacaoResponse;
 import br.com.costumerental.nfe.domain.NfeEventType;
 import br.com.costumerental.nfe.domain.NfeStatus;
 import br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEvento;
-import br.com.swconsultoria.nfe.schema.retConsCad.TRetConsCad;
+import br.com.swconsultoria.nfe.schema.consCad.TRetConsCad;
 import br.com.swconsultoria.nfe.schema.retdistdfeint.RetDistDFeInt;
 import br.com.swconsultoria.nfe.schema_4.inutNFe.TRetInutNFe;
 import org.springframework.stereotype.Component;

@@ -1,8 +1,10 @@
 package br.com.costumerental.nfe.application;
 
+import br.com.costumerental.nfe.api.dto.NfeEmissionRequest;
 import br.com.costumerental.nfe.api.dto.NfeEmissionResponse;
 import br.com.costumerental.nfe.domain.FiscalDocument;
 import br.com.costumerental.nfe.domain.FiscalDocumentXml;
+import br.com.costumerental.nfe.domain.Firm;
 import br.com.costumerental.nfe.domain.NfeDocumentTypeEntity;
 import br.com.costumerental.nfe.domain.NfeIssuer;
 import br.com.costumerental.nfe.domain.NfeStatus;
@@ -20,7 +22,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,6 +69,31 @@ class FiscalDocumentServiceTest {
 
         verify(statusCodeResolver).upsertSefazStatus("999", "Status desconhecido");
         verify(repository).save(document);
+    }
+
+    @Test
+    void saveSigned_shouldPersistNfceTypeForModel65AccessKey() {
+        String nfceAccessKey = "35260800000000000000650010000000011000000010";
+        NfeDocumentTypeEntity nfceType = new NfeDocumentTypeEntity("NFCE", "NFC-e");
+        NfeStatusEntity processingStatus = new NfeStatusEntity("PRC", "Processando", "PROCESSING");
+        Firm firm = new Firm();
+        firm.setRootCnpj("00000000");
+        firm.setBranchOrder("0001");
+        firm.setDigit("91");
+        NfeIssuer issuer = new NfeIssuer();
+        issuer.setFirm(firm);
+        issuer.setId(UUID.randomUUID());
+
+        when(issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()).thenReturn(Optional.of(issuer));
+        when(statusRepository.findByCode("PRC")).thenReturn(Optional.of(processingStatus));
+        when(documentTypeRepository.findByCode("NFCE")).thenReturn(Optional.of(nfceType));
+        when(xmlRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FiscalDocument saved = service.saveSigned(nfceAccessKey, "<xml/>", NfeEmissionRequest.builder().build());
+
+        assertThat(saved.getDocumentType().getCode()).isEqualTo("NFCE");
+        verify(documentTypeRepository).findByCode("NFCE");
     }
 
     @Test

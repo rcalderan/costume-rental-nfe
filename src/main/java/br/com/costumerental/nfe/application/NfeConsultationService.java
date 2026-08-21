@@ -10,9 +10,9 @@ import br.com.costumerental.nfe.xml.NfeConsultaResponseMapper;
 import br.com.swconsultoria.certificado.exception.CertificadoException;
 import br.com.swconsultoria.nfe.dom.ConfiguracoesNfe;
 import br.com.swconsultoria.nfe.exception.NfeException;
-import br.com.swconsultoria.nfe.schema_4.retConsReciNFe.TRetConsReciNFe;
-import br.com.swconsultoria.nfe.schema_4.retConsSitNFe.TRetConsSitNFe;
-import br.com.swconsultoria.nfe.schema_4.retConsStatServ.TRetConsStatServ;
+import br.com.swconsultoria.nfe.schema_4.consReciNFe.TRetConsReciNFe;
+import br.com.swconsultoria.nfe.schema_4.consSitNFe.TRetConsSitNFe;
+import br.com.swconsultoria.nfe.schema_4.consStatServ.TRetConsStatServ;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

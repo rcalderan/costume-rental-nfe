@@ -24,6 +24,9 @@ import java.util.Optional;
 public class FiscalDocumentService {
 
     private static final String DOCUMENT_TYPE_NFE = "NFE";
+    private static final String DOCUMENT_TYPE_NFCE = "NFCE";
+    private static final int MODELO_START_INDEX = 20;
+    private static final int MODELO_END_INDEX = 22;
 
     private final FiscalDocumentRepository repository;
     private final NfeStatusRepository statusRepository;
@@ -51,8 +54,9 @@ public class FiscalDocumentService {
         NfeIssuer issuer = issuerRepository.findFirstByActiveTrueOrderByFirmBranchOrderAsc()
                 .orElseThrow(() -> new IllegalStateException("Nenhum emitente ativo encontrado para salvar documento fiscal"));
         NfeStatusEntity processingStatus = statusEntity(NfeStatus.PROCESSING);
-        NfeDocumentTypeEntity docType = documentTypeRepository.findByCode(DOCUMENT_TYPE_NFE)
-                .orElseThrow(() -> new IllegalStateException("Tipo de documento NFE nao encontrado na base"));
+        String docTypeCode = documentTypeCodeFromAccessKey(accessKey);
+        NfeDocumentTypeEntity docType = documentTypeRepository.findByCode(docTypeCode)
+                .orElseThrow(() -> new IllegalStateException("Tipo de documento " + docTypeCode + " nao encontrado na base"));
         FiscalDocumentXml signedXmlEntity = xmlRepository.save(new FiscalDocumentXml("SIGNED", signedXml));
 
         FiscalDocument document = new FiscalDocument();
@@ -69,6 +73,7 @@ public class FiscalDocumentService {
 
     @Transactional
     public void updateAfterSefaz(FiscalDocument document, NfeEmissionResponse response) {
+        validateResponseForPersistence(response);
         document.setStatus(statusEntity(response.getStatus()));
         statusCodeResolver.upsertSefazStatus(response.getStatusCode(), response.getStatusMessage());
         document.setSefazStatusCode(response.getStatusCode());
@@ -79,6 +84,19 @@ public class FiscalDocumentService {
             document.setAuthorizedXml(authorizedXmlEntity);
         }
         repository.save(document);
+    }
+
+    private void validateResponseForPersistence(NfeEmissionResponse response) {
+        if (response.getStatusCode() != null && response.getStatusCode().length() > 4) {
+            throw new IllegalArgumentException(
+                    "statusCode excede 4 caracteres (tamanho=" + response.getStatusCode().length()
+                            + ", valor='" + response.getStatusCode() + "')");
+        }
+        if (response.getProtocol() != null && response.getProtocol().length() > 20) {
+            throw new IllegalArgumentException(
+                    "protocol excede 20 caracteres (tamanho=" + response.getProtocol().length()
+                            + ", valor='" + response.getProtocol() + "')");
+        }
     }
 
     @Transactional
@@ -100,6 +118,18 @@ public class FiscalDocumentService {
             document.setAuthorizedXml(xmlEntity);
         }
         repository.save(document);
+    }
+
+    /**
+     * O modelo do documento fiscal ocupa as posicoes 21 e 22 da chave de
+     * acesso de 44 digitos (55 = NF-e, 65 = NFC-e).
+     */
+    private String documentTypeCodeFromAccessKey(String accessKey) {
+        if (accessKey == null || accessKey.length() < MODELO_END_INDEX) {
+            throw new IllegalArgumentException("Chave de acesso invalida para identificar o modelo: " + accessKey);
+        }
+        String modelo = accessKey.substring(MODELO_START_INDEX, MODELO_END_INDEX);
+        return "65".equals(modelo) ? DOCUMENT_TYPE_NFCE : DOCUMENT_TYPE_NFE;
     }
 
     private NfeStatusEntity statusEntity(NfeStatus status) {

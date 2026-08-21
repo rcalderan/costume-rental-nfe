@@ -47,7 +47,7 @@ public class NfeEmissionService {
         NfeIssuer issuer = resolveIssuer(request);
         ensureIssuerConfigured(issuer);
         try {
-            ConfiguracoesNfe config = configProvider.buildConfig();
+            ConfiguracoesNfe config = configProvider.buildConfig(issuer);
             TEnviNFe enviNFe = xmlAssembler.build(request, issuer);
             TEnviNFe signedEnviNFe = libraryAdapter.signAndValidate(config, enviNFe);
             String signedXml = libraryAdapter.toXml(signedEnviNFe);
@@ -63,7 +63,10 @@ public class NfeEmissionService {
             String authorizedXml = responseMapper.isAuthorized(retorno)
                     ? libraryAdapter.buildNfeProc(signedEnviNFe, retorno)
                     : null;
-            NfeEmissionResponse response = responseMapper.map(retorno, signedXml, authorizedXml);
+            TNFe.InfNFeSupl infNFeSupl = signedEnviNFe.getNFe().get(0).getInfNFeSupl();
+            String qrCode = infNFeSupl != null ? infNFeSupl.getQrCode() : null;
+            String consultaUrl = infNFeSupl != null ? infNFeSupl.getUrlChave() : null;
+            NfeEmissionResponse response = responseMapper.map(retorno, signedXml, authorizedXml, qrCode, consultaUrl);
             fillNumberAndSeries(response, signedEnviNFe);
             fiscalDocumentService.updateAfterSefaz(document, response);
             return response;
@@ -114,7 +117,7 @@ public class NfeEmissionService {
         NfeIssuer issuer = resolveIssuer(request);
         ensureIssuerConfigured(issuer);
         try {
-            ConfiguracoesNfe config = configProvider.buildConfig();
+            ConfiguracoesNfe config = configProvider.buildConfig(issuer);
             TEnviNFe enviNFe = xmlAssembler.build(request, issuer);
             TEnviNFe signedEnviNFe = libraryAdapter.signAndValidate(config, enviNFe);
             String signedXml = libraryAdapter.toXml(signedEnviNFe);

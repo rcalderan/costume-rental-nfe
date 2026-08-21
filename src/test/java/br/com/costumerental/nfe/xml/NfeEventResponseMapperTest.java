@@ -9,9 +9,9 @@ import br.com.costumerental.nfe.domain.NfeStatus;
 import br.com.costumerental.nfe.repository.SefazStatusRepository;
 import br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEvento;
 import br.com.swconsultoria.nfe.schema.envEventoCancNFe.TRetEnvEvento;
-import br.com.swconsultoria.nfe.schema.retConsCad.TRetConsCad;
-import br.com.swconsultoria.nfe.schema.retConsCad.TRetConsCad.InfCons.InfCad;
-import br.com.swconsultoria.nfe.schema.retConsCad.TUfCons;
+import br.com.swconsultoria.nfe.schema.consCad.TRetConsCad;
+import br.com.swconsultoria.nfe.schema.consCad.TRetConsCad.InfCons.InfCad;
+import br.com.swconsultoria.nfe.schema.consCad.TUfCons;
 import br.com.swconsultoria.nfe.schema.retdistdfeint.RetDistDFeInt;
 import br.com.swconsultoria.nfe.schema_4.inutNFe.TRetInutNFe;
 import org.junit.jupiter.api.BeforeEach;
@@ -100,7 +100,7 @@ class NfeEventResponseMapperTest {
         cad.setIE("111111111111");
         cad.setCNPJ("00000000000191");
         cad.setXNome("Emitente Homologacao");
-        cad.setUF(br.com.swconsultoria.nfe.schema.retConsCad.TUf.SP);
+        cad.setUF(br.com.swconsultoria.nfe.schema.consCad.TUf.SP);
         inf.getInfCad().add(cad);
 
         retorno.setInfCons(inf);

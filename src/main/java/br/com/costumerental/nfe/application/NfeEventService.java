@@ -135,7 +135,7 @@ public class NfeEventService {
             PessoaEnum tipoPessoa = request.getDocument().length() == 11 ? PessoaEnum.FISICA : PessoaEnum.JURIDICA;
             EstadosEnum estado = EstadosEnum.valueOf(request.getUf());
 
-            br.com.swconsultoria.nfe.schema.retConsCad.TRetConsCad retorno = libraryAdapter.consultaCadastro(config, tipoPessoa,
+            br.com.swconsultoria.nfe.schema.consCad.TRetConsCad retorno = libraryAdapter.consultaCadastro(config, tipoPessoa,
                     digitsOnly(request.getDocument()), estado);
             return eventResponseMapper.mapConsultaCadastro(retorno);
         } catch (CertificadoException | NfeException e) {

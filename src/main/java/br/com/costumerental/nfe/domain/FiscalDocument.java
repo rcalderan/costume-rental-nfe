@@ -44,7 +44,7 @@ public class FiscalDocument {
     @JoinColumn(name = "status_id", nullable = false)
     private NfeStatusEntity status;
 
-    @Column(name = "sefaz_status_code", length = 3)
+    @Column(name = "sefaz_status_code", length = 4)
     private String sefazStatusCode;
 
     @OneToOne(fetch = FetchType.LAZY)

@@ -48,6 +48,9 @@ nfe:
   serie: ${NFE_SERIE:1}
   modelo: ${NFE_MODELO:55}
   processo-versao: ${NFE_PROC_VERSAO:1.0}
+  nfce:
+    qrcode-url: ${NFE_NFCE_QRCODE_URL:}
+    consulta-url: ${NFE_NFCE_CONSULTA_URL:}
 
 springdoc:
   api-docs:

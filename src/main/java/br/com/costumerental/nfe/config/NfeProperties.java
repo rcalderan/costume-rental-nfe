@@ -38,6 +38,25 @@ public class NfeProperties {
 
     private boolean validacaoDocumento = true;
 
+    private NfceProperties nfce = new NfceProperties();
+
+    @Getter
+    @Setter
+    public static class NfceProperties {
+
+        /**
+         * URL de QRCode da NFC-e (secao URL-QRCode do WebServicesNfe.ini da
+         * Java_NFe) para o estado do emitente. Obrigatoria quando modelo=65.
+         */
+        private String qrcodeUrl;
+
+        /**
+         * URL de "Consulta por chave de acesso da NFC-e" (secao
+         * URL-ConsultaNFCe) do estado do emitente. Obrigatoria quando modelo=65.
+         */
+        private String consultaUrl;
+    }
+
     @Getter
     @Setter
     public static class EmitProperties {
