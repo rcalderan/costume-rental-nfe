@@ -78,6 +78,30 @@ public class NfeIssuer {
     @Column(length = 10)
     private String certificateTipo;
 
+    // ── Campos NFS-e (mesma fonte de verdade da NF-e/NFC-e) ──
+    @Column(length = 6)
+    private String nfseServiceCode;
+
+    @Column(length = 20)
+    private String nfseNbsCode;
+
+    @Column(length = 255)
+    private String nfseServiceDescription;
+
+    @Column(precision = 5, scale = 2)
+    private java.math.BigDecimal nfseIssRate;
+
+    @Column(precision = 5, scale = 2)
+    private java.math.BigDecimal nfseTotalTaxRate;
+
+    /**
+     * E0120: a IM do prestador só pode ser informada na DPS quando o município
+     * emissor registrou informações complementares no CNC NFS-e.
+     * false = omite a IM no XML da NFS-e (a IM continua salva para a NF-e/NFC-e).
+     */
+    @Column(nullable = false)
+    private boolean nfseSendIm = false;
+
     @Column(nullable = false)
     private boolean active = true;
 

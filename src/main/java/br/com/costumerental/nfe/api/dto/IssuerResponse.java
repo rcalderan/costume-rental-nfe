@@ -24,6 +24,12 @@ public record IssuerResponse(
         String cep,
         String paisCodigo,
         String paisNome,
-        boolean certificateConfigured
+        boolean certificateConfigured,
+        String nfseServiceCode,
+        String nfseNbsCode,
+        String nfseServiceDescription,
+        java.math.BigDecimal nfseIssRate,
+        java.math.BigDecimal nfseTotalTaxRate,
+        boolean nfseSendIm
 ) {
 }

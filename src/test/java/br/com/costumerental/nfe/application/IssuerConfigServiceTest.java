@@ -112,7 +112,8 @@ class IssuerConfigServiceTest {
                 null, null, null,
                 "1", null,
                 "Rua Teste", "0", "Centro", "3548906", "Sao Carlos", "SP", "13560000",
-                "1058", "BRASIL"
+                "1058", "BRASIL",
+                null, null, null, null, null, null
         );
         assertThatThrownBy(() -> service.configureIssuer(request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -144,7 +145,13 @@ class IssuerConfigServiceTest {
                 "SP",
                 "13560000",
                 "1058",
-                "BRASIL"
+                "BRASIL",
+                "010101",
+                "10101",
+                "Locação de trajes",
+                new java.math.BigDecimal("2.50"),
+                new java.math.BigDecimal("6.00"),
+                true
         );
 
         NfeIssuer issuer = service.configureIssuer(request);
@@ -155,6 +162,12 @@ class IssuerConfigServiceTest {
         assertThat(issuer.isActive()).isTrue();
         assertThat(service.isConfigured()).isTrue();
         assertThat(properties.getEmit().getRazaoSocial()).isEqualTo("NOIVA MODAS E ACESSORIOS LTDA");
+        assertThat(issuer.getNfseServiceCode()).isEqualTo("010101");
+        assertThat(issuer.getNfseNbsCode()).isEqualTo("10101");
+        assertThat(issuer.getNfseServiceDescription()).isEqualTo("Locação de trajes");
+        assertThat(issuer.getNfseIssRate()).isEqualByComparingTo("2.50");
+        assertThat(issuer.getNfseTotalTaxRate()).isEqualByComparingTo("6.00");
+        assertThat(issuer.isNfseSendIm()).isTrue();
     }
 
     @Test

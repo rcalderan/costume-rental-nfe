@@ -84,6 +84,12 @@ public class IssuerController {
                 .paisCodigo(issuer.getPaisCodigo())
                 .paisNome(issuer.getPaisNome())
                 .certificateConfigured(issuer.getCertificatePath() != null && !issuer.getCertificatePath().isBlank())
+                .nfseServiceCode(issuer.getNfseServiceCode())
+                .nfseNbsCode(issuer.getNfseNbsCode())
+                .nfseServiceDescription(issuer.getNfseServiceDescription())
+                .nfseIssRate(issuer.getNfseIssRate())
+                .nfseTotalTaxRate(issuer.getNfseTotalTaxRate())
+                .nfseSendIm(issuer.isNfseSendIm())
                 .build();
     }
 }
