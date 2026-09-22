@@ -101,6 +101,12 @@ public class IssuerConfigService {
         issuer.setMunicipioNome(request.municipioNome());
         issuer.setUf(request.uf());
         issuer.setCep(request.cep());
+        issuer.setNfseServiceCode(request.nfseServiceCode());
+        issuer.setNfseNbsCode(request.nfseNbsCode());
+        issuer.setNfseServiceDescription(request.nfseServiceDescription());
+        issuer.setNfseIssRate(request.nfseIssRate());
+        issuer.setNfseTotalTaxRate(request.nfseTotalTaxRate());
+        issuer.setNfseSendIm(Boolean.TRUE.equals(request.nfseSendIm()));
         issuer.setActive(true);
 
         NfeIssuer saved = issuerRepository.save(issuer);

@@ -52,6 +52,25 @@ public record IssuerSetupRequest(
         String paisCodigo,
 
         @NotBlank(message = "Nome do país é obrigatório")
-        String paisNome
+        String paisNome,
+
+        // ── Campos NFS-e opcionais (mesma fonte de verdade da NF-e) ──
+        @Pattern(regexp = "^\\d{6}$", message = "Código de Tributação Nacional deve conter 6 dígitos numéricos")
+        String nfseServiceCode,
+
+        String nfseNbsCode,
+
+        String nfseServiceDescription,
+
+        java.math.BigDecimal nfseIssRate,
+
+        java.math.BigDecimal nfseTotalTaxRate,
+
+        /**
+         * true = envia a Inscrição Municipal do prestador na DPS da NFS-e.
+         * Só deve ser marcado quando o município emissor possui informações
+         * complementares registradas no CNC NFS-e (caso contrário, E0120).
+         */
+        Boolean nfseSendIm
 ) {
 }

@@ -1,0 +1,2 @@
+ALTER TABLE nfe_issuer
+    ADD COLUMN IF NOT EXISTS nfse_send_im BOOLEAN NOT NULL DEFAULT false;
